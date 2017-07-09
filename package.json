@@ -1,0 +1,35 @@
+{
+  "name": "pouch-model",
+  "version": "0.1.0",
+  "description": "A PouchDB adapter for the json-document modelling framework.",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "mocha -w"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EternalDeiwos/pouch-model.git"
+  },
+  "keywords": [
+    "PouchDB",
+    "JSONDocument",
+    "Model",
+    "ORM"
+  ],
+  "author": "Greg Linklater <greg@gryphus.io>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/EternalDeiwos/pouch-model/issues"
+  },
+  "homepage": "https://github.com/EternalDeiwos/pouch-model#readme",
+  "dependencies": {
+    "@trust/jose": "^0.3.2",
+    "@trust/json-document": "^0.1.4",
+    "pouchdb": "^6.2.0"
+  },
+  "devDependencies": {
+    "chai": "^4.0.2",
+    "chai-as-promised": "^7.1.1",
+    "mocha": "^3.4.2"
+  }
+}
