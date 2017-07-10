@@ -65,7 +65,7 @@ class Model extends JSONDocument {
    */
   static set sync (options) {
     if (!options) {
-      throw new InvalidConfigurationError(`Model ${this.name} sync options are required`)
+      throw new InvalidConfigurationError(`Model ${this.name} remote database options are required for sync`)
     }
 
     if (!this.sync) {
