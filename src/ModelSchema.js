@@ -20,11 +20,13 @@ const ModelSchema = new JSONSchema({
       additionalProperties: {
         type: 'object',
         properties: {
+          stub: { type: 'boolean' },
           content_type: { type: 'string' },
           data: { type: 'object' },
           digest: { type: 'string' },
+          length: { type: 'integer' },
         },
-        required: ['content_type', 'data']
+        required: ['content_type']
       }
     }
   }
