@@ -243,37 +243,6 @@ class Model extends JSONDocument {
   }
 
   /**
-   * onSync
-   *
-   * @static
-   */
-  static onSync (name, fn) {
-    this.sync.forEach(sync => sync.on(name, fn))
-  }
-
-  /**
-   * onChange
-   *
-   * @static
-   */
-  static onChange (fn) {
-    if (!this.database) {
-      return Promise.reject(new OperationError(`Model ${this.name} has no database set`))
-    }
-
-    // Create change feed if not already present
-    if (!this.changes) {
-      Object.defineProperty(this, '_changes', { value: this.database.changes({ since: 'now', live: true, include_docs: true }), enumerable: true })
-    }
-
-    // Subscribe change listener
-    let { changes } = this
-
-    changes.on('error', error => throw new InternalError(error.message, error.stack))
-    changes.on('change', fn)
-  }
-
-  /**
    * post
    */
   post () {
