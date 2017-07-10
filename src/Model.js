@@ -342,6 +342,108 @@ class Model extends JSONDocument {
         return Promise.reject(new InternalError(message, stack))
       })
   }
+
+  /**
+   * getAttachment
+   */
+  getAttachment (name, options = {}) {
+    let { database, name: modelName } = this.constructor
+
+    if (!database) {
+      return Promise.reject(new OperationError(`Model ${modelName} has no database set`))
+    }
+
+    return database.getAttachment(this._id, name, options)
+      .then(attachment => {
+        if (!this._attachments) {
+          this._attachments = {}
+        }
+
+        this._attachments[name] = attachment
+        return this
+      })
+      .catch(error => {
+        let { status, message, stack } = error
+
+        if (status === 404) {
+          return null
+        }
+
+        return Promise.reject(new InternalError(message, stack))
+      })
+  }
+
+  /**
+   * putAttachment
+   */
+  putAttachment (name, attachment) {
+    let { content_type, data } = attachment
+    let { database, name: modelName } = this.constructor
+
+    if (!database) {
+      return Promise.reject(new OperationError(`Model ${modelName} has no database set`))
+    }
+
+    return database.putAttachment(this._id, name, this._rev, data, content_type)
+      .then(result => {
+        this._rev = result.rev
+
+        if (!this._attachments) {
+          this._attachments = {}
+        }
+
+        this._attachments[name] = { content_type, data: data.toString('base64') }
+        return this
+      })
+      .catch(error => {
+        let { status, message, stack } = error
+
+        if (status === 409) {
+          return this.constructor.get(this._id)
+            .then(doc => {
+              this._rev = doc._rev
+              return this.putAttachment(name, attachment)
+            })
+        }
+
+        return Promise.reject(new InternalError(message, stack))
+      })
+  }
+
+  /**
+   * deleteAttachment
+   */
+  deleteAttachment (name) {
+    let { database, name: modelName } = this.constructor
+
+    if (!database) {
+      return Promise.reject(new OperationError(`Model ${modelName} has no database set`))
+    }
+
+    return database.removeAttachment(this._id, name, this._rev)
+      .then(result => {
+        this._rev = result.rev || this._rev
+
+        if (this._attachments && this._attachments[name]) {
+          delete this._attachments[name]
+        }
+
+        return this
+      })
+      .catch(error => {
+        let { status, message, stack } = error
+
+        if (status === 409) {
+          return this.constructor.get(this._id)
+            .then(doc => {
+              this._rev = doc._rev
+              return this.deleteAttachment(name, attachment)
+            })
+        }
+
+        return Promise.reject(new InternalError(message, stack))
+      })
+  }
 }
 
 /**
