@@ -243,6 +243,13 @@ class Model extends JSONDocument {
   }
 
   /**
+   * getIndexes
+   */
+  static getIndexes () {
+    return this.database.getIndexes()
+  }
+
+  /**
    * post
    */
   post () {
