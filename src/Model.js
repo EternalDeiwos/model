@@ -76,7 +76,7 @@ class Model extends JSONDocument {
       return Promise.reject(new OperationError(`Model ${this.name} has no database set`))
     }
 
-    // Try create remote connection
+    // Try create remote connection and sync
     try {
       let remote = new PouchDB(options)
       let sync = this.database.sync(remote, {
@@ -88,7 +88,7 @@ class Model extends JSONDocument {
 
       this.sync.push(sync)
     } catch (error) {
-      throw new InvalidConfigurationError(`Model ${this.name} sync options invalid`)
+      throw new InvalidConfigurationError(`Model ${this.name} remote database options invalid for sync`)
     }
   }
 
@@ -167,7 +167,7 @@ class Model extends JSONDocument {
    */
   static set changes (options) {
     if (!options) {
-      throw new InvalidConfigurationError(`Model ${this.name} database options are required`)
+      throw new InvalidConfigurationError(`Model ${this.name} changes options are required`)
     }
 
     if (!this.database) {
@@ -183,7 +183,7 @@ class Model extends JSONDocument {
     try {
       Object.defineProperty(this, '_changes', { value: this.database.changes(options), enumerable: true })
     } catch (error) {
-      throw new InvalidConfigurationError(`Model ${this.name} database options invalid`)
+      throw new InvalidConfigurationError(`Model ${this.name} changes options invalid`)
     }
   }
 
