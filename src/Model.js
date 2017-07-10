@@ -56,6 +56,9 @@ class Model extends JSONDocument {
 
     // Create indices
     this.indexes.forEach(index => this._database.createIndex(index))
+
+    // Create queries
+    this.queries.forEach(query => this.createQuery(query.name, query.query))
   }
 
   /**
@@ -258,9 +261,31 @@ class Model extends JSONDocument {
     let ExtendedModel = this
     let { database } = this
 
+    if (!database) {
+      return Promise.reject(new OperationError(`Model ${this.name} has no database set`))
+    }
+
     options.selector = options.selector || {}
 
     return database.find(options)
+      .then(results => results.docs.map(doc => new ExtendedModel(doc)))
+      .catch(error => Promise.reject(new InternalError(error.message, error.stack)))
+  }
+
+  /**
+   * query
+   *
+   * @static
+   */
+  static query (fn, options = {}) {
+    let ExtendedModel = this
+    let { database } = this
+
+    if (!database) {
+      return Promise.reject(new OperationError(`Model ${this.name} has no database set`))
+    }
+
+    return database.query(fn, options)
       .then(results => results.docs.map(doc => new ExtendedModel(doc)))
       .catch(error => Promise.reject(new InternalError(error.message, error.stack)))
   }
@@ -315,6 +340,37 @@ class Model extends JSONDocument {
    */
   static getIndexes () {
     return this.database.getIndexes()
+  }
+
+  /**
+   * createQuery
+   *
+   * @static
+   */
+  static createQuery (name, fn) {
+    let { database } = this
+
+    if (!database) {
+      return Promise.reject(new OperationError(`Model ${this.name }has no database set`))
+    }
+
+    if (!fn) {
+      return Promise.reject(new InvalidConfigurationError(`createQuery requires at least a map function`))
+    }
+
+    // Normalize input
+    if (typeof fn === 'function') {
+      fn = { map: fn }
+    } else if (typeof fn !== 'object') {
+      return Promise.reject(new InvalidConfigurationError(`createQuery requires at least a map function`))
+    }
+
+    return this.put({
+      _id: `_design/${name}`
+      views: {
+        [name]: fn
+      }
+    })
   }
 
   /**
