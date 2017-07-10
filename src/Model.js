@@ -55,7 +55,7 @@ class Model extends JSONDocument {
     }
 
     // Create indices
-    this.indexes.forEach(index => this._database.createIndex(index))
+    this.indexes.forEach(index => this.createIndex(index))
 
     // Create queries
     this.queries.forEach(query => this.createQuery(query.name, query.query))
@@ -332,13 +332,27 @@ class Model extends JSONDocument {
    * @static
    */
   static createIndex (index) {
+    let { database } = this
+
+    if (!database) {
+      return Promise.reject(new OperationError(`Model ${this.name} has no database set`))
+    }
+
     return this.database.createIndex(index)
   }
 
   /**
    * getIndexes
+   *
+   * @static
    */
   static getIndexes () {
+    let { database } = this
+
+    if (!database) {
+      return Promise.reject(new OperationError(`Model ${this.name} has no database set`))
+    }
+
     return this.database.getIndexes()
   }
 
