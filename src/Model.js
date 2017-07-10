@@ -42,6 +42,11 @@ class Model extends JSONDocument {
       throw new InvalidConfigurationError(`Model ${this.name} database options are required`)
     }
 
+    // Close current open database
+    if (this.database) {
+      this.database.close()
+    }
+
     // Try create database connection
     try {
       Object.defineProperty(this, '_database', { value: new PouchDB(options), enumerable: true })
