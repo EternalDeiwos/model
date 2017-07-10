@@ -93,6 +93,33 @@ class Model extends JSONDocument {
   }
 
   /**
+   * set changes
+   *
+   * @static
+   */
+  static set changes (options) {
+    if (!options) {
+      throw new InvalidConfigurationError(`Model ${this.name} database options are required`)
+    }
+
+    if (!this.database) {
+      return Promise.reject(new OperationError(`Model ${this.name} has no database set`))
+    }
+
+    // Cancel existing change feed
+    if (this.changes) {
+      this.changes.cancel()
+    }
+
+    // Try create change feed
+    try {
+      Object.defineProperty(this, '_changes', { value: this.database.changes(options), enumerable: true })
+    } catch (error) {
+      throw new InvalidConfigurationError(`Model ${this.name} database options invalid`)
+    }
+  }
+
+  /**
    * get database
    *
    * @static
