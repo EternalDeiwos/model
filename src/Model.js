@@ -55,7 +55,7 @@ class Model extends JSONDocument {
     }
 
     // Create indices
-    this.indices.forEach(index => this._database.createIndex(index))
+    this.indexes.forEach(index => this._database.createIndex(index))
   }
 
   /**
@@ -147,11 +147,11 @@ class Model extends JSONDocument {
   }
 
   /**
-   * get indices
+   * get indexes
    *
    * @static
    */
-  static get indices () {
+  static get indexes () {
     return []
   }
 
