@@ -160,7 +160,7 @@ class Model extends JSONDocument {
    *
    * @static
    */
-  static get (id) {
+  static get (id, options = {}) {
     let ExtendedModel = this
     let { database } = this
 
@@ -168,7 +168,7 @@ class Model extends JSONDocument {
       return Promise.reject(new OperationError(`Model ${this.name} has no database set`))
     }
 
-    return database.get(id)
+    return database.get(id, options)
       .then(doc => new ExtendedModel(doc))
       .catch(error => {
         let { status, message, stack } = error
