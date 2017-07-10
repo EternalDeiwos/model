@@ -582,6 +582,28 @@ class Model extends JSONDocument {
   }
 
   /**
+   * close
+   *
+   * @static
+   *
+   * @description
+   * Close the database and replication connection and change feed
+   *
+   * @return {Promise}
+   */
+  static close () {
+    let { database, changes, sync } = this
+
+    if (changes) {
+      changes.cancel()
+    }
+
+    sync.forEach(replication => replication.cancel())
+
+    return database.close()
+  }
+
+  /**
    * put
    *
    * @description
