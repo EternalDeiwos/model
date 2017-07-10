@@ -54,13 +54,10 @@ class Model extends JSONDocument {
    * @type {PouchDB}
    */
   static set database (options) {
-    if (!options) {
-      throw new InvalidConfigurationError(`Model ${this.name} database options are required`)
-    }
-
     // Close current open database
-    if (this.database) {
+    try {
       this.database.close()
+    } catch (error) {
     }
 
     // Try create database connection
@@ -70,6 +67,7 @@ class Model extends JSONDocument {
       throw new InvalidConfigurationError(`Model ${this.name} database options invalid`)
     }
 
+    // TODO these are asyncronous... this should be handled better
     // Create indices
     this.indexes.forEach(index => this.createIndex(index))
 
@@ -91,18 +89,6 @@ class Model extends JSONDocument {
    * @type {Replication}
    */
   static set sync (options) {
-    if (!options) {
-      throw new InvalidConfigurationError(`Model ${this.name} remote database options are required for sync`)
-    }
-
-    if (!this.sync) {
-      Object.defineProperty(this, 'internalSync', { value: [], enumerable: true })
-    }
-
-    if (!this.database) {
-      return Promise.reject(new OperationError(`Model ${this.name} has no database set`))
-    }
-
     // Try create remote connection and sync
     try {
       let remote = new PouchDB(options)
@@ -135,18 +121,6 @@ class Model extends JSONDocument {
    * @type {Replication}
    */
   static set replicateTo (options) {
-    if (!options) {
-      throw new InvalidConfigurationError(`Model ${this.name} remote database options are required for replicate`)
-    }
-
-    if (!this.sync) {
-      Object.defineProperty(this, 'internalSync', { value: [], enumerable: true })
-    }
-
-    if (!this.database) {
-      return Promise.reject(new OperationError(`Model ${this.name} has no database set`))
-    }
-
     // Try create remote connection and replicate
     try {
       let remote = new PouchDB(options)
@@ -179,18 +153,6 @@ class Model extends JSONDocument {
    * @type {Replication}
    */
   static set replicateFrom (options) {
-    if (!options) {
-      throw new InvalidConfigurationError(`Model ${this.name} remote database options are required for replicate`)
-    }
-
-    if (!this.sync) {
-      Object.defineProperty(this, 'internalSync', { value: [], enumerable: true })
-    }
-
-    if (!this.database) {
-      return Promise.reject(new OperationError(`Model ${this.name} has no database set`))
-    }
-
     // Try create remote connection and replicate
     try {
       let remote = new PouchDB(options)
@@ -222,25 +184,12 @@ class Model extends JSONDocument {
    * @type {ChangeFeed}
    */
   static set changes (options) {
-    if (!options) {
-      throw new InvalidConfigurationError(`Model ${this.name} changes options are required`)
-    }
-
-    if (!this.database) {
-      return Promise.reject(new OperationError(`Model ${this.name} has no database set`))
-    }
-
     // Cancel existing change feed
     if (this.changes) {
       this.changes.cancel()
     }
 
-    // Try create change feed
-    try {
-      Object.defineProperty(this, 'internalChanges', { value: this.database.changes(options), enumerable: true })
-    } catch (error) {
-      throw new InvalidConfigurationError(`Model ${this.name} changes options invalid`)
-    }
+    Object.defineProperty(this, 'internalChanges', { value: this.database.changes(options), enumerable: true, configurable: true })
   }
 
   /**
@@ -248,7 +197,13 @@ class Model extends JSONDocument {
    * @ignore
    */
   static get database () {
-    return this.internalDatabase
+    let { internalDatabase } = this
+
+    if (!internalDatabase) {
+      throw new OperationError(`Model ${this.name} has no database set`)
+    }
+
+    return internalDatabase
   }
 
   /**
@@ -256,6 +211,10 @@ class Model extends JSONDocument {
    * @ignore
    */
   static get sync () {
+    if (!this.internalSync) {
+      Object.defineProperty(this, 'internalSync', { value: [], enumerable: true })
+    }
+
     return this.internalSync
   }
 
@@ -325,10 +284,6 @@ class Model extends JSONDocument {
     let ExtendedModel = this
     let { database } = this
 
-    if (!database) {
-      return Promise.reject(new OperationError(`Model ${this.name} has no database set`))
-    }
-
     return database.query(fn, options)
       .then(results => results.docs.map(doc => new ExtendedModel(doc)))
       .catch(error => Promise.reject(new InternalError(error.message, error.stack)))
@@ -350,10 +305,6 @@ class Model extends JSONDocument {
   static find (options = {}) {
     let ExtendedModel = this
     let { database } = this
-
-    if (!database) {
-      return Promise.reject(new OperationError(`Model ${this.name} has no database set`))
-    }
 
     options.selector = options.selector || {}
 
@@ -379,10 +330,6 @@ class Model extends JSONDocument {
   static get (id, options = {}) {
     let ExtendedModel = this
     let { database } = this
-
-    if (!database) {
-      return Promise.reject(new OperationError(`Model ${this.name} has no database set`))
-    }
 
     return database.get(id, options)
       .then(doc => new ExtendedModel(doc))
@@ -416,10 +363,6 @@ class Model extends JSONDocument {
   static post (data) {
     let ExtendedModel = this
     let { database } = this
-
-    if (!database) {
-      return Promise.reject(new OperationError(`Model ${this.name} has no database set`))
-    }
 
     let instance = new ExtendedModel(data)
     let validation = instance.validate()
@@ -513,10 +456,6 @@ class Model extends JSONDocument {
   static createIndex (index) {
     let { database } = this
 
-    if (!database) {
-      return Promise.reject(new OperationError(`Model ${this.name} has no database set`))
-    }
-
     return this.database.createIndex(index)
   }
 
@@ -534,10 +473,6 @@ class Model extends JSONDocument {
    */
   static getIndexes () {
     let { database } = this
-
-    if (!database) {
-      return Promise.reject(new OperationError(`Model ${this.name} has no database set`))
-    }
 
     return this.database.getIndexes()
       .then(result => result.indexes)
@@ -561,10 +496,6 @@ class Model extends JSONDocument {
    */
   static createQuery (name, fn) {
     let { database } = this
-
-    if (!database) {
-      return Promise.reject(new OperationError(`Model ${this.name }has no database set`))
-    }
 
     if (!fn) {
       return Promise.reject(new InvalidConfigurationError(`createQuery requires at least a map function`))
@@ -598,7 +529,9 @@ class Model extends JSONDocument {
       changes.cancel()
     }
 
-    sync.forEach(replication => replication.cancel())
+    if (sync) {
+      sync.forEach(replication => replication.cancel())
+    }
 
     return database.close()
   }
@@ -616,10 +549,6 @@ class Model extends JSONDocument {
   put () {
     let { database, name: modelName } = this.constructor
     let validation = this.validate()
-
-    if (!database) {
-      return Promise.reject(new OperationError(`Model ${modelName} has no database set`))
-    }
 
     if (!validation.valid) {
       return Promise.reject(new ValidationError(validation))
@@ -659,10 +588,6 @@ class Model extends JSONDocument {
   delete () {
     let { database, name: modelName } = this.constructor
 
-    if (!database) {
-      return Promise.reject(new OperationError(`Model ${modelName} has no database set`))
-    }
-
     return database.remove(this)
       .then(result => !!result.ok)
       .catch(error => {
@@ -695,10 +620,6 @@ class Model extends JSONDocument {
    */
   getAttachment (name, options = {}) {
     let { database, name: modelName } = this.constructor
-
-    if (!database) {
-      return Promise.reject(new OperationError(`Model ${modelName} has no database set`))
-    }
 
     return database.getAttachment(this._id, name, options)
       .then(attachment => {
@@ -737,10 +658,6 @@ class Model extends JSONDocument {
   putAttachment (name, attachment) {
     let { content_type, data } = attachment
     let { database, name: modelName } = this.constructor
-
-    if (!database) {
-      return Promise.reject(new OperationError(`Model ${modelName} has no database set`))
-    }
 
     return database.putAttachment(this._id, name, this._rev, data, content_type)
       .then(result => {
@@ -781,10 +698,6 @@ class Model extends JSONDocument {
    */
   deleteAttachment (name) {
     let { database, name: modelName } = this.constructor
-
-    if (!database) {
-      return Promise.reject(new OperationError(`Model ${modelName} has no database set`))
-    }
 
     return database.removeAttachment(this._id, name, this._rev)
       .then(result => {
