@@ -227,6 +227,15 @@ class Model extends JSONDocument {
   }
 
   /**
+   * get queries
+   *
+   * @static
+   */
+  static get queries () {
+    return []
+  }
+
+  /**
    * get
    *
    * @static
