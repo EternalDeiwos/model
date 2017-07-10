@@ -1,0 +1,37 @@
+'use strict'
+
+/**
+ * Dependencies
+ * @ignore
+ */
+const { JSONSchema } = require('@trust/json-document')
+
+/**
+ * ModelSchema
+ * @ignore
+ */
+const ModelSchema = new JSONSchema({
+  type: 'object',
+  properties: {
+    _id: { type: 'string' },
+    _rev: { type: 'string' },
+    _attachments: {
+      type: 'object',
+      additionalProperties: {
+        type: 'object',
+        properties: {
+          content_type: { type: 'string' },
+          data: { type: 'object' },
+          digest: { type: 'string' },
+        },
+        required: ['content_type', 'data']
+      }
+    }
+  }
+})
+
+/**
+ * Exports
+ * @ignore
+ */
+module.exports = ModelSchema

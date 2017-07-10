@@ -13,6 +13,7 @@ const PouchDB = require('pouchdb')
  * @ignore
  */
 const { OperationError, InvalidConfigurationError, ValidationError, InternalError } = require('./errors')
+const ModelSchema = require('./ModelSchema')
 
 /**
  * Model
@@ -21,6 +22,15 @@ const { OperationError, InvalidConfigurationError, ValidationError, InternalErro
  * A PouchDB adapter for the json-document modelling framework.
  */
 class Model extends JSONDocument {
+
+  /**
+   * schema
+   *
+   * @static
+   */
+  static get schema () {
+    return ModelSchema
+  }
 
   /**
    * set database
