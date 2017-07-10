@@ -93,6 +93,74 @@ class Model extends JSONDocument {
   }
 
   /**
+   * replicateTo
+   *
+   * @static
+   */
+  static set replicateTo (options) {
+    if (!options) {
+      throw new InvalidConfigurationError(`Model ${this.name} remote database options are required for replicate`)
+    }
+
+    if (!this.sync) {
+      Object.defineProperty(this, '_sync', { value: [], enumerable: true })
+    }
+
+    if (!this.database) {
+      return Promise.reject(new OperationError(`Model ${this.name} has no database set`))
+    }
+
+    // Try create remote connection and replicate
+    try {
+      let remote = new PouchDB(options)
+      let replicate = this.database.replicate.to(remote, {
+        live: true,
+        retry: true
+      })
+
+      replicate.on('error', error => throw new InternalError(error.message, error.stack))
+
+      this.sync.push(replicate)
+    } catch (error) {
+      throw new InvalidConfigurationError(`Model ${this.name} remote database options invalid for replicate`)
+    }
+  }
+
+  /**
+   * replicateFrom
+   *
+   * @static
+   */
+  static set replicateFrom (options) {
+    if (!options) {
+      throw new InvalidConfigurationError(`Model ${this.name} remote database options are required for replicate`)
+    }
+
+    if (!this.sync) {
+      Object.defineProperty(this, '_sync', { value: [], enumerable: true })
+    }
+
+    if (!this.database) {
+      return Promise.reject(new OperationError(`Model ${this.name} has no database set`))
+    }
+
+    // Try create remote connection and replicate
+    try {
+      let remote = new PouchDB(options)
+      let replicate = this.database.replicate.from(remote, {
+        live: true,
+        retry: true
+      })
+
+      replicate.on('error', error => throw new InternalError(error.message, error.stack))
+
+      this.sync.push(replicate)
+    } catch (error) {
+      throw new InvalidConfigurationError(`Model ${this.name} remote database options invalid for replicate`)
+    }
+  }
+
+  /**
    * set changes
    *
    * @static
