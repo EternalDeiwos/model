@@ -6,12 +6,7 @@
  */
 const { JSONDocument } = require('@trust/json-document')
 const PouchDB = require('pouchdb')
-
-/**
- * PouchDB Plugins
- * @ignore
- */
-PouchDB.plugin(require('pouchdb-find'))
+  .plugin(require('pouchdb-find'))
 
 /**
  * Module Dependencies
