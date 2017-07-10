@@ -5,11 +5,19 @@
  * @ignore
  */
 const Model = require('./Model')
+const { OperationError, InvalidConfigurationError, ValidationError, InternalError } = require('./errors')
 
 /**
  * Exports
  * @ignore
  */
 module.exports = {
-  Model
+  // Models
+  Model,
+
+  // Errors
+  OperationError,
+  InvalidConfigurationError,
+  ValidationError,
+  InternalError,
 }
