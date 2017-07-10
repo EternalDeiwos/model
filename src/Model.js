@@ -49,7 +49,7 @@ class Model extends JSONDocument {
 
     // Try create database connection
     try {
-      Object.defineProperty(this, '_database', { value: new PouchDB(options), enumerable: true })
+      Object.defineProperty(this, 'internalDatabase', { value: new PouchDB(options), enumerable: true })
     } catch (error) {
       throw new InvalidConfigurationError(`Model ${this.name} database options invalid`)
     }
@@ -72,7 +72,7 @@ class Model extends JSONDocument {
     }
 
     if (!this.sync) {
-      Object.defineProperty(this, '_sync', { value: [], enumerable: true })
+      Object.defineProperty(this, 'internalSync', { value: [], enumerable: true })
     }
 
     if (!this.database) {
@@ -106,7 +106,7 @@ class Model extends JSONDocument {
     }
 
     if (!this.sync) {
-      Object.defineProperty(this, '_sync', { value: [], enumerable: true })
+      Object.defineProperty(this, 'internalSync', { value: [], enumerable: true })
     }
 
     if (!this.database) {
@@ -140,7 +140,7 @@ class Model extends JSONDocument {
     }
 
     if (!this.sync) {
-      Object.defineProperty(this, '_sync', { value: [], enumerable: true })
+      Object.defineProperty(this, 'internalSync', { value: [], enumerable: true })
     }
 
     if (!this.database) {
@@ -184,7 +184,7 @@ class Model extends JSONDocument {
 
     // Try create change feed
     try {
-      Object.defineProperty(this, '_changes', { value: this.database.changes(options), enumerable: true })
+      Object.defineProperty(this, 'internalChanges', { value: this.database.changes(options), enumerable: true })
     } catch (error) {
       throw new InvalidConfigurationError(`Model ${this.name} changes options invalid`)
     }
@@ -196,7 +196,7 @@ class Model extends JSONDocument {
    * @static
    */
   static get database () {
-    return this._database
+    return this.internalDatabase
   }
 
   /**
@@ -205,7 +205,7 @@ class Model extends JSONDocument {
    * @static
    */
   static get sync () {
-    return this._sync
+    return this.internalSync
   }
 
   /**
@@ -214,7 +214,7 @@ class Model extends JSONDocument {
    * @static
    */
   static get changes () {
-    return this._changes
+    return this.internalChanges
   }
 
   /**
