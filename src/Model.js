@@ -19,7 +19,9 @@ const ModelSchema = require('./ModelSchema')
  * Model
  *
  * @class
- * A PouchDB adapter for the json-document modelling framework.
+ * A PouchDB adapter for the json-document modelling framework. Extends {@link https://www.npmjs.com/package/@trust/json-document|JSONDocument}.
+ *
+ * @extends JSONDocument
  */
 class Model extends JSONDocument {
 
@@ -27,6 +29,13 @@ class Model extends JSONDocument {
    * schema
    *
    * @static
+   *
+   * @description
+   * Model Schema
+   *
+   * @see {@link https://www.npmjs.com/package/@trust/json-document|JSONSchema}
+   *
+   * @return {JSONSchema}
    */
   static get schema () {
     return ModelSchema
@@ -36,6 +45,13 @@ class Model extends JSONDocument {
    * set database
    *
    * @static
+   *
+   * @description
+   * Configure the database
+   *
+   * @see {@link https://pouchdb.com/api.html#create_database|PouchDB Constructor Options}
+   *
+   * @type {PouchDB}
    */
   static set database (options) {
     if (!options) {
@@ -65,6 +81,14 @@ class Model extends JSONDocument {
    * set sync
    *
    * @static
+   *
+   * @description
+   * Configure a remote database for bidirectional replication
+   *
+   * @see {@link https://pouchdb.com/api.html#create_database|PouchDB Constructor Options}
+   * @see {@link https://pouchdb.com/api.html#sync|Sync}
+   *
+   * @type {Replication}
    */
   static set sync (options) {
     if (!options) {
@@ -87,7 +111,9 @@ class Model extends JSONDocument {
         retry: true
       })
 
-      sync.on('error', error => throw new InternalError(error.message, error.stack))
+      sync.on('error', error => {
+        throw new InternalError(error.message, error.stack)
+      })
 
       this.sync.push(sync)
     } catch (error) {
@@ -99,6 +125,14 @@ class Model extends JSONDocument {
    * replicateTo
    *
    * @static
+   *
+   * @description
+   * Configure a remote database for unidirectional replication
+   *
+   * @see {@link https://pouchdb.com/api.html#create_database|PouchDB Constructor Options}
+   * @see {@link https://pouchdb.com/api.html#replication|Replication}
+   *
+   * @type {Replication}
    */
   static set replicateTo (options) {
     if (!options) {
@@ -121,7 +155,9 @@ class Model extends JSONDocument {
         retry: true
       })
 
-      replicate.on('error', error => throw new InternalError(error.message, error.stack))
+      replicate.on('error', error => {
+        throw new InternalError(error.message, error.stack)
+      })
 
       this.sync.push(replicate)
     } catch (error) {
@@ -133,6 +169,14 @@ class Model extends JSONDocument {
    * replicateFrom
    *
    * @static
+   *
+   * @description
+   * Configure a remote database for unidirectional replication
+   *
+   * @see {@link https://pouchdb.com/api.html#create_database|PouchDB Constructor Options}
+   * @see {@link https://pouchdb.com/api.html#replication|Replication}
+   *
+   * @type {Replication}
    */
   static set replicateFrom (options) {
     if (!options) {
@@ -155,7 +199,9 @@ class Model extends JSONDocument {
         retry: true
       })
 
-      replicate.on('error', error => throw new InternalError(error.message, error.stack))
+      replicate.on('error', error => {
+        throw new InternalError(error.message, error.stack)
+      })
 
       this.sync.push(replicate)
     } catch (error) {
@@ -167,6 +213,13 @@ class Model extends JSONDocument {
    * set changes
    *
    * @static
+   *
+   * @description
+   * Configure a change feed for the database
+   *
+   * @see {@link https://pouchdb.com/api.html#changes|PouchDB Changes Options}
+   *
+   * @type {ChangeFeed}
    */
   static set changes (options) {
     if (!options) {
@@ -192,8 +245,7 @@ class Model extends JSONDocument {
 
   /**
    * get database
-   *
-   * @static
+   * @ignore
    */
   static get database () {
     return this.internalDatabase
@@ -201,8 +253,7 @@ class Model extends JSONDocument {
 
   /**
    * get sync
-   *
-   * @static
+   * @ignore
    */
   static get sync () {
     return this.internalSync
@@ -210,8 +261,7 @@ class Model extends JSONDocument {
 
   /**
    * get changes
-   *
-   * @static
+   * @ignore
    */
   static get changes () {
     return this.internalChanges
@@ -221,6 +271,17 @@ class Model extends JSONDocument {
    * get indexes
    *
    * @static
+   * @abstract
+   *
+   * @default []
+   *
+   * @description
+   * An array of objects describing the indices to ensure exist when a new database
+   * connection is made.
+   *
+   * @see {@link https://pouchdb.com/api.html#create_index|Index}
+   *
+   * @type {Array<Index>}
    */
   static get indexes () {
     return []
@@ -230,15 +291,90 @@ class Model extends JSONDocument {
    * get queries
    *
    * @static
+   * @abstract
+   *
+   * @default []
+   *
+   * @description
+   * An array of objects describing the named queries to ensure exist when a new
+   * database connection is made.
+   *
+   * @see {@link https://pouchdb.com/api.html#query_database|MapReduceQuery}
+   *
+   * @type {Array<MapReduceQuery>}
    */
   static get queries () {
     return []
   }
 
   /**
+   * query
+   *
+   * @static
+   *
+   * @description
+   * Execute a named query on the database collection.
+   *
+   * @see {@link https://pouchdb.com/api.html#query_database|MapReduceQuery}
+   *
+   * @param {String} fn - Named query (see Model.createQuery and Model.queries)
+   * @param {Object} [options={}] {@link https://pouchdb.com/api.html#query_database|QueryOptions}
+   * @return {Promise<Array<ExtendedModel>>}
+   */
+  static query (fn, options = {}) {
+    let ExtendedModel = this
+    let { database } = this
+
+    if (!database) {
+      return Promise.reject(new OperationError(`Model ${this.name} has no database set`))
+    }
+
+    return database.query(fn, options)
+      .then(results => results.docs.map(doc => new ExtendedModel(doc)))
+      .catch(error => Promise.reject(new InternalError(error.message, error.stack)))
+  }
+
+  /**
+   * find
+   *
+   * @static
+   *
+   * @description
+   * Execute an indexed query on the database collection and instantiate the extending class.
+   *
+   * @see {@link https://pouchdb.com/api.html#create_index|Index}
+   *
+   * @param {Object} [options={}] {@link https://pouchdb.com/api.html#query_index|FindOptions}
+   * @return {Promise<Array<ExtendedModel>>}
+   */
+  static find (options = {}) {
+    let ExtendedModel = this
+    let { database } = this
+
+    if (!database) {
+      return Promise.reject(new OperationError(`Model ${this.name} has no database set`))
+    }
+
+    options.selector = options.selector || {}
+
+    return database.find(options)
+      .then(results => results.docs.map(doc => new ExtendedModel(doc)))
+      .catch(error => Promise.reject(new InternalError(error.message, error.stack)))
+  }
+
+  /**
    * get
    *
    * @static
+   *
+   * @description
+   * Retrieves a stored document and instantiate the extending class.
+   *
+   * @see {@link https://pouchdb.com/api.html#fetch_document|Query}
+   *
+   * @param {String} id
+   * @param {Object} [options={}] {@link https://pouchdb.com/api.html#fetch_document|GetOptions}
+   * @return {Promise<ExtendedModel>}
    */
   static get (id, options = {}) {
     let ExtendedModel = this
@@ -262,57 +398,73 @@ class Model extends JSONDocument {
   }
 
   /**
-   * find
-   *
-   * @static
-   */
-  static find (options = {}) {
-    let ExtendedModel = this
-    let { database } = this
-
-    if (!database) {
-      return Promise.reject(new OperationError(`Model ${this.name} has no database set`))
-    }
-
-    options.selector = options.selector || {}
-
-    return database.find(options)
-      .then(results => results.docs.map(doc => new ExtendedModel(doc)))
-      .catch(error => Promise.reject(new InternalError(error.message, error.stack)))
-  }
-
-  /**
-   * query
-   *
-   * @static
-   */
-  static query (fn, options = {}) {
-    let ExtendedModel = this
-    let { database } = this
-
-    if (!database) {
-      return Promise.reject(new OperationError(`Model ${this.name} has no database set`))
-    }
-
-    return database.query(fn, options)
-      .then(results => results.docs.map(doc => new ExtendedModel(doc)))
-      .catch(error => Promise.reject(new InternalError(error.message, error.stack)))
-  }
-
-  /**
    * post
    *
    * @static
+   *
+   * @description
+   * Create a new document in the database and provide an instance of the extending class.
+   *
+   * @see {@link https://pouchdb.com/api.html#create_document|Post}
+   *
+   * @param {Object} data
+   * @param {String} [data._id] - Omitting this results in a new _id being generated.
+   * @param {String} [data._rev] - Required if updating an existing document
+   * @param {Object} [data._attachments]
+   * @return {Promise<ExtendedModel>}
    */
   static post (data) {
     let ExtendedModel = this
-    return new ExtendedModel(data).post()
+    let { database } = this
+
+    if (!database) {
+      return Promise.reject(new OperationError(`Model ${this.name} has no database set`))
+    }
+
+    let instance = new ExtendedModel(data)
+    let validation = instance.validate()
+
+    if (!validation.valid) {
+      return Promise.reject(new ValidationError(validation))
+    }
+
+    return database.post(instance)
+      .then(result => {
+        instance._id = result.id
+        instance._rev = result.rev
+        return instance
+      })
+      .catch(error => {
+        let { status, message, stack } = error
+
+        // Database Conflict
+        if (status === 409) {
+          return this.get(instance._id)
+            .then(doc => {
+              data._rev = doc._rev
+              return this.post(data)
+            })
+        }
+
+        return Promise.reject(new InternalError(message, stack))
+      })
   }
 
   /**
    * put
    *
    * @static
+   *
+   * @description
+   * Create or update a document in the database and provide an instance of the extending class.
+   *
+   * @see {@link https://pouchdb.com/api.html#create_document|Put}
+   *
+   * @param {Object} data
+   * @param {String} data._id
+   * @param {String} [data._rev] - Required if updating an existing document
+   * @param {Object} [data._attachments]
+   * @return {Promise<ExtendedModel>}
    */
   static put (data) {
     let ExtendedModel = this
@@ -323,6 +475,16 @@ class Model extends JSONDocument {
    * delete
    *
    * @static
+   *
+   * @description
+   * Delete a document in the database
+   *
+   * @see {@link https://pouchdb.com/api.html#delete_document|Delete}
+   *
+   * @param {(Object|String)} data
+   * @param {String} data._id
+   * @param {String} data._rev
+   * @return {Promise<Boolean>}
    */
   static delete (data) {
     let ExtendedModel = this
@@ -339,6 +501,14 @@ class Model extends JSONDocument {
    * createIndex
    *
    * @static
+   *
+   * @description
+   * Create an index on the database collection
+   *
+   * @see {@link https://pouchdb.com/api.html#create_index|Create Index}
+   *
+   * @param {Object} index - {@link https://pouchdb.com/api.html#create_index|Index}
+   * @return {Promise}
    */
   static createIndex (index) {
     let { database } = this
@@ -354,6 +524,13 @@ class Model extends JSONDocument {
    * getIndexes
    *
    * @static
+   *
+   * @description
+   * Get existing indices on the database collection
+   *
+   * @see {@link https://pouchdb.com/api.html#list_indexes|List Indexes}
+   *
+   * @return {Promise<Array<Index>>}
    */
   static getIndexes () {
     let { database } = this
@@ -363,12 +540,24 @@ class Model extends JSONDocument {
     }
 
     return this.database.getIndexes()
+      .then(result => result.indexes)
   }
 
   /**
    * createQuery
    *
    * @static
+   *
+   * @description
+   * Create an named on the database collection
+   *
+   * @see {@link https://pouchdb.com/api.html#query_database|MapReduceQuery}
+   *
+   * @param {String} name
+   * @param {(Object|Function)} fn - {@link https://pouchdb.com/api.html#query_database|MapReduceQuery}
+   * @param {Function} fn.map
+   * @param {Function} [fn.reduce]
+   * @returns {Promise}
    */
   static createQuery (name, fn) {
     let { database } = this
@@ -388,53 +577,19 @@ class Model extends JSONDocument {
       return Promise.reject(new InvalidConfigurationError(`createQuery requires at least a map function`))
     }
 
-    return this.put({
-      _id: `_design/${name}`
-      views: {
-        [name]: fn
-      }
-    })
-  }
-
-  /**
-   * post
-   */
-  post () {
-    let { database, name: modelName } = this.constructor
-    let validation = this.validate()
-
-    if (!database) {
-      return Promise.reject(new OperationError(`Model ${modelName} has no database set`))
-    }
-
-    if (!validation.valid) {
-      return Promise.reject(new ValidationError(validation))
-    }
-
-    return database.post(this)
-      .then(result => {
-        this._id = result.id
-        this._rev = result.rev
-        return this
-      })
-      .catch(error => {
-        let { status, message, stack } = error
-
-        // Database Conflict
-        if (status === 409) {
-          return this.constructor.get(this._id)
-            .then(doc => {
-              this._rev = doc._rev
-              return this.post()
-            })
-        }
-
-        return Promise.reject(new InternalError(message, stack))
-      })
+    return this.put({ _id: `_design/${name}`, views: { [name]: fn } })
+      .then(doc => doc._rev.startsWith('1') ? { result: 'created' } : { result: 'updated' })
   }
 
   /**
    * put
+   *
+   * @description
+   * Create or update a document in the database and provide an instance of the extending class.
+   *
+   * @see {@link https://pouchdb.com/api.html#create_document|Put}
+   *
+   * @return {Promise<ExtendedModel>}
    */
   put () {
     let { database, name: modelName } = this.constructor
@@ -471,6 +626,13 @@ class Model extends JSONDocument {
 
   /**
    * delete
+   *
+   * @description
+   * Delete a document in the database
+   *
+   * @see {@link https://pouchdb.com/api.html#delete_document|Delete}
+   *
+   * @return {Promise<Boolean>}
    */
   delete () {
     let { database, name: modelName } = this.constructor
@@ -499,6 +661,15 @@ class Model extends JSONDocument {
 
   /**
    * getAttachment
+   *
+   * @description
+   * Get a document attachment from the database
+   *
+   * @see {@link https://pouchdb.com/api.html#get_attachment|Get Attachment}
+   *
+   * @param {String} name
+   * @param {Object} [options={}] {@link https://pouchdb.com/api.html#get_attachment|GetAttachmentOptions}
+   * @return {Promise<ExtendedModel>}
    */
   getAttachment (name, options = {}) {
     let { database, name: modelName } = this.constructor
@@ -529,6 +700,17 @@ class Model extends JSONDocument {
 
   /**
    * putAttachment
+   *
+   * @description
+   * Put an attachment onto a document in the database
+   *
+   * @see {@link https://pouchdb.com/api.html#put_attachment|Put Attachment}
+   *
+   * @param {String} name
+   * @param {Object} attachment {@link https://pouchdb.com/api.html#put_attachment|Attachment}
+   * @param {String} attachment.content_type - mime type
+   * @param {Buffer} attachment.data
+   * @return {Promise<ExtendedModel>}
    */
   putAttachment (name, attachment) {
     let { content_type, data } = attachment
@@ -566,6 +748,14 @@ class Model extends JSONDocument {
 
   /**
    * deleteAttachment
+   *
+   * @description
+   * Delete an attachment from a document in the database
+   *
+   * @see {@link https://pouchdb.com/api.html#delete_attachment|Delete Attachment}
+   *
+   * @param {String} name
+   * @return {Promise<ExtendedModel>}
    */
   deleteAttachment (name) {
     let { database, name: modelName } = this.constructor
