@@ -62,17 +62,17 @@ class Model extends JSONDocument {
 
     // Try create database connection
     try {
-      Object.defineProperty(this, 'internalDatabase', { value: new PouchDB(options), enumerable: true })
+      Object.defineProperty(this, 'internalDatabase', { value: new PouchDB(options), enumerable: true, configurable: true })
     } catch (error) {
       throw new InvalidConfigurationError(`Model ${this.name} database options invalid`)
     }
 
     // TODO these are asyncronous... this should be handled better
     // Create indices
-    this.indexes.forEach(index => this.createIndex(index))
+    let indexPromises = this.indexes.map(index => this.createIndex(index))
 
     // Create queries
-    this.queries.forEach(query => this.createQuery(query.name, query.query))
+    let queryPromises = this.queries.map(query => this.createQuery(query.name, query.query))
   }
 
   /**
