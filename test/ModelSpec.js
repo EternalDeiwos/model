@@ -87,10 +87,22 @@ describe('Model', () => {
    */
   describe('member database', () => {
     let klass
+    const index = 'some_index'
+    const query = { name: 'some_query', query: 'query body' }
 
     beforeEach(() => {
-      class Widgets extends Model {}
+      class Widgets extends Model {
+        static get indexes () { return [index] }
+        static get queries () { return [query] }
+      }
       klass = Widgets
+      sinon.stub(klass, 'createIndex')
+      sinon.stub(klass, 'createQuery')
+    })
+
+    afterEach(() => {
+      klass.createIndex.restore()
+      klass.createQuery.restore()
     })
 
     describe('set', () => {
@@ -102,6 +114,13 @@ describe('Model', () => {
       it('should configure the database with an object argument', () => {
         klass.database = { name: dbName }
         klass.database.should.be.instanceOf(PouchDB)
+      })
+
+      it('should close a previous database connection if a new one is created', () => {
+        let stub = sinon.stub()
+        klass.internalDatabase = { close: stub }
+        klass.database = dbName
+        stub.should.have.been.calledOnce
       })
 
       it('should throw InvalidConfigurationError with invalid (boolean) option', () => {
@@ -124,8 +143,22 @@ describe('Model', () => {
         expect(() => klass.database = { name: 2 }).to.throw(InvalidConfigurationError, 'Model Widgets database options invalid')
       })
 
-      it('should create database indices')
-      it('should create database map-reduce queries')
+      it('should create database indices', () => {
+        klass.database = dbName
+        klass.createIndex.should.have.been.calledOnce
+        klass.createIndex.should.have.been.calledWith(index)
+      })
+
+      it('should create database map-reduce queries', () => {
+        klass.database = dbName
+        klass.createQuery.should.have.been.calledOnce
+        klass.createQuery.should.have.been.calledWith(query.name, query.query)
+      })
+
+      describe.skip('database setup promise', () => {
+        it('should reject if database index creation fails')
+        it('should reject if database query creation fails')
+      })
     })
 
     describe('get', () => {
@@ -356,7 +389,7 @@ describe('Model', () => {
   })
 
   /**
-   * query
+   * static query
    */
   describe('static query', () => {
     let klass
@@ -390,7 +423,7 @@ describe('Model', () => {
   })
 
   /**
-   * find
+   * static find
    */
   describe('static find', () => {
     let klass
@@ -447,7 +480,7 @@ describe('Model', () => {
   })
 
   /**
-   * get
+   * static get
    */
   describe('static get', () => {
     let klass
@@ -501,7 +534,7 @@ describe('Model', () => {
   })
 
   /**
-   * post
+   * static post
    */
   describe('static post', () => {
     let klass
@@ -572,6 +605,256 @@ describe('Model', () => {
       }
 
       return klass.post().should.eventually.be.rejectedWith(InternalError, error_message)
+    })
+  })
+
+  /**
+   * static put
+   */
+  describe('static put', () => {
+    let klass
+    let put_doc = { _id: 'foo' }
+    let put_result_with_rev = { _id: 'foo', _rev: '3-z' }
+    let error_message = 'fubar'
+
+    beforeEach(() => {
+      class Widgets extends Model {}
+      klass = Widgets
+      klass.database = dbName
+    })
+
+    it('should proxy member put', () => {
+      sinon.stub(klass.prototype, 'put').usingPromise(Promise).resolves(put_result_with_rev)
+      return klass.put(put_doc).then(result => {
+        klass.prototype.put.should.have.been.called
+      })
+      klass.prototype.put.restore()
+    })
+  })
+
+  /**
+   * static delete
+   */
+  describe('static delete', () => {
+    let klass
+    let _id = 'foo'
+    let delete_doc = { _id }
+    let delete_doc_with_rev = { _id, _rev: '3-z' }
+    let delete_result = { ok: true }
+    let error_message = 'fubar'
+
+    beforeEach(() => {
+      class Widgets extends Model {}
+      klass = Widgets
+      klass.database = dbName
+    })
+
+    it('should proxy member delete', () => {
+      sinon.stub(klass.prototype, 'delete').usingPromise(Promise).resolves(delete_result)
+      return klass.delete(delete_doc_with_rev).then(result => {
+        klass.prototype.delete.should.have.been.called
+        result.should.deep.equal(delete_result)
+        klass.prototype.delete.restore()
+      })
+    })
+
+    it('should call static get first if string arg', () => {
+      let deleteStub = sinon.stub().returns(delete_result)
+      let instance_with_delete_stub = Object.assign({}, delete_doc_with_rev)
+      instance_with_delete_stub.delete = deleteStub
+      sinon.stub(klass, 'get').usingPromise(Promise).resolves(instance_with_delete_stub)
+
+      return klass.delete(_id).then(result => {
+        klass.get.should.have.been.calledWith(_id)
+        result.should.deep.equal(delete_result)
+        klass.get.restore()
+      })
+    })
+
+    it('should call static get first if object arg has no _rev', () => {
+      let deleteStub = sinon.stub().returns(delete_result)
+      let instance_with_delete_stub = Object.assign({}, delete_doc_with_rev)
+      instance_with_delete_stub.delete = deleteStub
+      sinon.stub(klass, 'get').usingPromise(Promise).resolves(instance_with_delete_stub)
+
+      return klass.delete(delete_doc).then(result => {
+        klass.get.should.have.been.calledWith(_id)
+        result.should.deep.equal(delete_result)
+        klass.get.restore()
+      })
+    })
+
+    it('should proxy member delete after calling static get', () => {
+      let deleteStub = sinon.stub().returns(delete_result)
+      let instance_with_delete_stub = Object.assign({}, delete_doc_with_rev)
+      instance_with_delete_stub.delete = deleteStub
+      sinon.stub(klass, 'get').usingPromise(Promise).resolves(instance_with_delete_stub)
+
+      return klass.delete(_id).then(result => {
+        klass.get.should.have.been.calledWith(_id)
+        deleteStub.should.have.been.called
+        result.should.deep.equal(delete_result)
+        klass.get.restore()
+      })
+    })
+  })
+
+  /**
+   * static createIndex
+   */
+  describe('static createIndex', () => {
+    let klass
+    let index = 'index'
+
+    beforeEach(() => {
+      class Widgets extends Model {}
+      klass = Widgets
+      klass.internalDatabase = { createIndex: sinon.stub().usingPromise(Promise).resolves() }
+    })
+
+    it('should proxy database createIndex', () => {
+      return klass.createIndex(index).then(result => {
+        klass.database.createIndex.should.have.been.calledWith(index)
+      })
+    })
+  })
+
+  /**
+   * static getIndexes
+   */
+  describe('static getIndexes', () => {
+    let klass
+    let indexes = ['foo', 'bar']
+    let indexes_result = { indexes }
+
+    beforeEach(() => {
+      class Widgets extends Model {}
+      klass = Widgets
+      klass.internalDatabase = { getIndexes: sinon.stub().usingPromise(Promise).resolves(indexes_result) }
+    })
+
+    it('should proxy database getIndexes', () => {
+      return klass.getIndexes().then(result => {
+        klass.database.getIndexes.should.have.been.called
+      })
+    })
+
+    it('should map results to the index array', () => {
+      return klass.getIndexes().then(result => {
+        result.should.deep.equal(indexes)
+      })
+    })
+  })
+
+  /**
+   * static createQuery
+   */
+  describe('static createQuery', () => {
+    let klass
+    let query_name = 'query'
+    let db_query_name = '_design/query'
+    let query_map = () => {}
+    let query_reduce = () => {}
+    let db_query_map = { _id: db_query_name, views: { [query_name]: { map: query_map } } }
+    let db_query_both = { _id: db_query_name, views: { [query_name]: { map: query_map, reduce: query_reduce } } }
+    let result_created = { _rev: '1-x' }
+    let result_updated = { _rev: '2-z' }
+
+    beforeEach(() => {
+      class Widgets extends Model {}
+      klass = Widgets
+      klass.internalDatabase = { }
+    })
+
+    it('should reject if at least one function is not provided', () => {
+      return klass.createQuery(query_name).should.eventually.be.rejectedWith(InvalidConfigurationError, 'createQuery requires at least a map function')
+    })
+
+    it('should reject if fn argument is a boolean', () => {
+      return klass.createQuery(query_name, false).should.eventually.be.rejectedWith(InvalidConfigurationError, 'createQuery requires at least a map function')
+    })
+
+    it('should reject if fn argument is a number', () => {
+      return klass.createQuery(query_name, 2).should.eventually.be.rejectedWith(InvalidConfigurationError, 'createQuery requires at least a map function')
+    })
+
+    it('should call static put with normalized input (map)', () => {
+      sinon.stub(klass, 'put').usingPromise(Promise).resolves(result_created)
+      let stub = klass.put
+
+      return klass.createQuery(query_name, query_map).then(result => {
+        stub.lastCall.args[0].should.deep.equal(db_query_map)
+        result.should.deep.equal({ result: 'created' })
+        stub.restore()
+      })
+    })
+
+    it('should call static put with normalized input (map+reduce)', () => {
+      sinon.stub(klass, 'put').usingPromise(Promise).resolves(result_created)
+      let stub = klass.put
+
+      return klass.createQuery(query_name, { map: query_map, reduce: query_reduce }).then(result => {
+        stub.lastCall.args[0].should.deep.equal(db_query_both)
+        result.should.deep.equal({ result: 'created' })
+        stub.restore()
+      })
+    })
+
+    it('should return "created" if query is a new document', () => {
+      sinon.stub(klass, 'put').usingPromise(Promise).resolves(result_created)
+
+      return klass.createQuery(query_name, { map: query_map, reduce: query_reduce }).then(result => {
+        result.should.deep.equal({ result: 'created' })
+        klass.put.restore()
+      })
+    })
+
+    it('should return "updated" if query is an existing document', () => {
+      sinon.stub(klass, 'put').usingPromise(Promise).resolves(result_updated)
+
+      return klass.createQuery(query_name, { map: query_map, reduce: query_reduce }).then(result => {
+        result.should.deep.equal({ result: 'updated' })
+        klass.put.restore()
+      })
+    })
+  })
+
+  /**
+   * static close
+   */
+  describe('static close', () => {
+    let klass
+    let resolveData = { foo: 'bar' }
+
+    beforeEach(() => {
+      class Widgets extends Model {}
+      klass = Widgets
+      klass.internalDatabase = { close: sinon.stub().usingPromise(Promise).resolves(resolveData) }
+      klass.internalSync = [{ cancel: sinon.stub().usingPromise(Promise).resolves() }, { cancel: sinon.stub().usingPromise(Promise).resolves() }]
+      klass.internalChanges = { cancel: sinon.stub().usingPromise(Promise).resolves() }
+    })
+
+    it('should cancel change feed', () => {
+      return klass.close().then(() => {
+        klass.changes.cancel.should.have.been.called
+      })
+    })
+
+    it('should cancel all sync instances', () => {
+      return klass.close().then(() => {
+        klass.sync[0].cancel.should.have.been.called
+        klass.sync[1].cancel.should.have.been.called
+      })
+    })
+
+    it('should close the database connection', () => {
+      return klass.close().then(() => {
+        klass.database.close.should.have.been.called
+      })
+    })
+
+    it('should return the database.close promise', () => {
+      return klass.close().should.eventually.equal(resolveData)
     })
   })
 })
