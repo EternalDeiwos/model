@@ -51,14 +51,16 @@ describe('Model', () => {
   /**
    * model extends
    */
-  it('should extend JSONDocument', () => {
-    Object.getPrototypeOf(Model).should.equal(JSONDocument)
+  describe('static member schema', () => {
+    it('static member schema should extend JSONDocument', () => {
+      Object.getPrototypeOf(Model).should.equal(JSONDocument)
+    })
   })
 
   /**
    * schema
    */
-  describe('member schema', () => {
+  describe('static member schema', () => {
     it('should be an instance of JSONSchema', () => {
       Model.schema.should.be.instanceOf(JSONSchema)
     })
@@ -85,7 +87,7 @@ describe('Model', () => {
   /**
    * database
    */
-  describe('member database', () => {
+  describe('static member database', () => {
     let klass
     const index = 'some_index'
     const query = { name: 'some_query', query: 'query body' }
@@ -181,7 +183,7 @@ describe('Model', () => {
   /**
    * sync
    */
-  describe('member sync', () => {
+  describe('static member sync', () => {
     let klass
 
     beforeEach(() => {
@@ -230,7 +232,7 @@ describe('Model', () => {
   /**
    * replicateTo
    */
-  describe('member replicateTo', () => {
+  describe('static member replicateTo', () => {
     let klass
 
     beforeEach(() => {
@@ -269,7 +271,7 @@ describe('Model', () => {
   /**
    * replicateFrom
    */
-  describe('member replicateFrom', () => {
+  describe('static member replicateFrom', () => {
     let klass
 
     beforeEach(() => {
@@ -308,7 +310,7 @@ describe('Model', () => {
   /**
    * changes
    */
-  describe('member changes', () => {
+  describe('static member changes', () => {
     let klass
 
     beforeEach(() => {
@@ -351,7 +353,7 @@ describe('Model', () => {
   /**
    * indexes
    */
-  describe('member indexes', () => {
+  describe('static member indexes', () => {
     it('should be an array', () => {
       expect(Array.isArray(Model.indexes)).to.be.true
     })
@@ -371,7 +373,7 @@ describe('Model', () => {
   /**
    * queries
    */
-  describe('member queries', () => {
+  describe('static member queries', () => {
     it('should be an array', () => {
       expect(Array.isArray(Model.queries)).to.be.true
     })
@@ -855,6 +857,328 @@ describe('Model', () => {
 
     it('should return the database.close promise', () => {
       return klass.close().should.eventually.equal(resolveData)
+    })
+  })
+
+  /**
+   * member put
+   */
+  describe('member put', () => {
+    let klass
+    let put_doc = { _id: 'foo', _rev: '3-z' }
+    let put_result = { id: 'foo', rev: '3-z' }
+    let error_message = 'fubar'
+
+    before(() => {
+      class Widgets extends Model {}
+      klass = Widgets
+    })
+
+    it('should validate the data before storing it', () => {
+      sinon.stub(klass.prototype, 'validate').returns({ valid: true })
+      klass.internalDatabase = {
+        put: sinon.stub().usingPromise(Promise).resolves(put_result)
+      }
+
+      return new klass(put_doc).put().then(doc => {
+        klass.prototype.validate.should.have.been.calledOnce
+        klass.database.put.should.have.been.calledOnce
+        klass.prototype.validate.restore()
+      })
+    })
+
+    it('should proxy the call to the database', () => {
+      klass.internalDatabase = {
+        put: sinon.stub().usingPromise(Promise).resolves(put_result)
+      }
+
+      return new klass(put_doc).put().then(doc => {
+        doc._rev.should.equal(put_doc._rev)
+        klass.database.put.should.have.been.calledOnce
+      })
+    })
+
+    it('should resolve an instance of the extended model', () => {
+      klass.internalDatabase = {
+        put: sinon.stub().usingPromise(Promise).resolves(put_result)
+      }
+
+      return new klass(put_doc).put().then(doc => {
+        doc.should.be.instanceOf(klass)
+        klass.database.put.should.have.been.calledOnce
+      })
+    })
+
+    it('should get and retry if the put rejects with a 409', () => {
+      let err = new Error(error_message)
+      err.status = 409
+      klass.internalDatabase = {
+        put: sinon.stub().usingPromise(Promise).onFirstCall().rejects(err)
+          .onSecondCall().resolves(put_result),
+        get: sinon.stub().usingPromise(Promise).resolves(put_doc)
+      }
+
+      let data = {}
+      return new klass(put_doc).put(data).then(() => {
+        klass.database.put.should.have.been.calledTwice
+        klass.database.get.should.have.been.calledOnce
+      })
+    })
+
+    it('should reject with InternalError if put rejects with any other status', () => {
+      klass.internalDatabase = {
+        put: sinon.stub().usingPromise(Promise).rejects(new Error(error_message))
+      }
+
+      return new klass(put_doc).put().should.eventually.be.rejectedWith(InternalError, error_message)
+    })
+  })
+
+  /**
+   * member delete
+   */
+  describe('member delete', () => {
+    let klass
+    let delete_doc = { _id: 'foo', _rev: '3-z' }
+    let delete_result = { ok: true }
+    let error_message = 'fubar'
+
+    before(() => {
+      class Widgets extends Model {}
+      klass = Widgets
+    })
+
+    it('should proxy the call to the database', () => {
+      klass.internalDatabase = {
+        remove: sinon.stub().usingPromise(Promise).resolves(delete_result)
+      }
+
+      return new klass(delete_doc).delete().then(() => {
+        klass.database.remove.should.have.been.calledOnce
+      }).should.eventually.be.fulfilled
+    })
+
+    it('should resolve a boolean', () => {
+      klass.internalDatabase = {
+        remove: sinon.stub().usingPromise(Promise).resolves(delete_result)
+      }
+
+      return new klass(delete_doc).delete().then(result => {
+        klass.database.remove.should.have.been.calledOnce
+        result.should.be.true
+      })
+    })
+
+    it('should get and retry if the delete rejects with a 409', () => {
+      let err = new Error(error_message)
+      err.status = 409
+      klass.internalDatabase = {
+        remove: sinon.stub().usingPromise(Promise).onFirstCall().rejects(err)
+          .onSecondCall().resolves(delete_result),
+        get: sinon.stub().usingPromise(Promise).resolves(delete_doc)
+      }
+
+      return new klass(delete_doc).delete().then(result => {
+        klass.database.remove.should.have.been.calledTwice
+        klass.database.get.should.have.been.calledOnce
+        result.should.be.true
+      })
+    })
+
+    it('should reject with InternalError if delete rejects with any other status', () => {
+      klass.internalDatabase = {
+        remove: sinon.stub().usingPromise(Promise).rejects(new Error(error_message))
+      }
+
+      return new klass(delete_doc).delete().should.eventually.be.rejectedWith(InternalError, error_message)
+    })
+  })
+
+  /**
+   * member getAttachment
+   */
+  describe('member getAttachment', () => {
+    let klass
+    let get_doc = { _id: 'foo' }
+    let attachment_name = 'att.txt'
+    let attachment = 'some data'
+    let error_message = 'fubar'
+
+    before(() => {
+      class Widgets extends Model {}
+      klass = Widgets
+    })
+
+    it('should proxy the call to the database', () => {
+      klass.internalDatabase = {
+        getAttachment: sinon.stub().usingPromise(Promise).resolves(attachment)
+      }
+
+      return new klass(get_doc).getAttachment(attachment_name).then(doc => {
+        doc._attachments[attachment_name].should.equal(attachment)
+        klass.database.getAttachment.should.have.been.calledOnce
+      })
+    })
+
+    it('should resolve an instance of the extended model', () => {
+      klass.internalDatabase = {
+        getAttachment: sinon.stub().usingPromise(Promise).resolves(attachment)
+      }
+
+      return new klass(get_doc).getAttachment(attachment_name).then(doc => {
+        doc.should.be.instanceOf(klass)
+        klass.database.getAttachment.should.have.been.calledOnce
+      })
+    })
+
+    it('should get and retry if the post rejects with a 409', () => {
+      let err = new Error(error_message)
+      err.status = 404
+      klass.internalDatabase = {
+        getAttachment: sinon.stub().usingPromise(Promise).rejects(err)
+      }
+
+      return new klass(get_doc).getAttachment(attachment_name).then(doc => {
+        expect(doc._attachments[attachment_name]).to.be.null
+      })
+    })
+
+    it('should reject with InternalError if getAttachment rejects with any other status', () => {
+      klass.internalDatabase = {
+        getAttachment: sinon.stub().usingPromise(Promise).rejects(new Error(error_message))
+      }
+
+      return new klass(get_doc).getAttachment(attachment_name).should.eventually.be.rejectedWith(InternalError, error_message)
+    })
+  })
+
+  /**
+   * member putAttachment
+   */
+  describe('member putAttachment', () => {
+    let klass
+    let data = Buffer.from('some data')
+    let doc = { _id: 'foo', _rev: '3-z' }
+    let attachment_name = 'att.txt'
+    let attachment = { content_type: 'text/plain', data }
+    let put_result = { rev: '4-x' }
+    let error_message = 'fubar'
+
+    before(() => {
+      class Widgets extends Model {}
+      klass = Widgets
+    })
+
+    it('should resolve an instance of the extended model', () => {
+      klass.internalDatabase = {
+        putAttachment: sinon.stub().usingPromise(Promise).resolves(put_result)
+      }
+
+      return new klass(doc).putAttachment(attachment_name, attachment).then(result_doc => {
+        result_doc.should.be.instanceOf(klass)
+        klass.database.putAttachment.should.have.been
+          .calledWith(doc._id, attachment_name, doc._rev, attachment.data, attachment.content_type)
+      })
+    })
+
+    it('should proxy the call to the database', () => {
+      klass.internalDatabase = {
+        putAttachment: sinon.stub().usingPromise(Promise).resolves(put_result)
+      }
+
+      return new klass(doc).putAttachment(attachment_name, attachment).then(result_doc => {
+        result_doc._attachments[attachment_name].should.deep.equal({ content_type: attachment.content_type, data: data.toString('base64') })
+        klass.database.putAttachment.should.have.been
+          .calledWith(doc._id, attachment_name, doc._rev, attachment.data, attachment.content_type)
+      })
+    })
+
+    it('should get and retry if the putAttachment rejects with a 409', () => {
+      let err = new Error(error_message)
+      err.status = 409
+      klass.internalDatabase = {
+        putAttachment: sinon.stub().usingPromise(Promise).onFirstCall().rejects(err)
+          .onSecondCall().resolves(put_result),
+        get: sinon.stub().usingPromise(Promise).resolves(doc)
+      }
+
+      return new klass(doc).putAttachment(attachment_name, attachment).then(() => {
+        klass.database.putAttachment.should.have.been.calledTwice
+        klass.database.get.should.have.been.calledOnce
+      })
+    })
+
+    it('should reject with InternalError if putAttachment rejects with any other status', () => {
+      klass.internalDatabase = {
+        putAttachment: sinon.stub().usingPromise(Promise).rejects(new Error(error_message))
+      }
+
+      return new klass(doc).putAttachment(attachment_name, attachment).should.eventually.be.rejectedWith(InternalError, error_message)
+    })
+  })
+
+  /**
+   * member deleteAttachment
+   */
+  describe('member deleteAttachment', () => {
+    let klass
+    let data = Buffer.from('some data')
+    let attachment_name = 'att.txt'
+    let attachment = { content_type: 'text/plain', data }
+    let doc = { _id: 'foo', _rev: '3-z', _attachments: { [attachment_name]: attachment } }
+    let delete_result = { ok: true, rev: '4-x' }
+    let error_message = 'fubar'
+
+    before(() => {
+      class Widgets extends Model {}
+      klass = Widgets
+    })
+
+    it('should resolve an instance of the extended model', () => {
+      klass.internalDatabase = {
+        removeAttachment: sinon.stub().usingPromise(Promise).resolves(delete_result)
+      }
+
+      return new klass(doc).deleteAttachment(attachment_name).then(result_doc => {
+        result_doc.should.be.instanceOf(klass)
+        klass.database.removeAttachment.should.have.been
+          .calledWith(doc._id, attachment_name, doc._rev)
+      })
+    })
+
+    it('should proxy the call to the database', () => {
+      klass.internalDatabase = {
+        removeAttachment: sinon.stub().usingPromise(Promise).resolves(delete_result)
+      }
+
+      return new klass(doc).deleteAttachment(attachment_name).then(result_doc => {
+        expect(result_doc._attachments[attachment_name]).to.be.undefined
+        klass.database.removeAttachment.should.have.been
+          .calledWith(doc._id, attachment_name, doc._rev)
+      })
+    })
+
+    it('should get and retry if the deleteAttachment rejects with a 409', () => {
+      let err = new Error(error_message)
+      err.status = 409
+      klass.internalDatabase = {
+        removeAttachment: sinon.stub().usingPromise(Promise).onFirstCall().rejects(err)
+          .onSecondCall().resolves(delete_result),
+        get: sinon.stub().usingPromise(Promise).resolves(doc)
+      }
+
+      return new klass(doc).deleteAttachment(attachment_name).then(() => {
+        klass.database.removeAttachment.should.have.been.calledTwice
+        klass.database.get.should.have.been.calledOnce
+      })
+    })
+
+    it('should reject with InternalError if deleteAttachment rejects with any other status', () => {
+      klass.internalDatabase = {
+        removeAttachment: sinon.stub().usingPromise(Promise).rejects(new Error(error_message))
+      }
+
+      return new klass(doc).deleteAttachment(attachment_name).should.eventually.be.rejectedWith(InternalError, error_message)
     })
   })
 })
