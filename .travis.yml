@@ -1,0 +1,11 @@
+sudo: false
+
+language: node_js
+
+node_js: "6.11.0"
+
+before_install: npm i -g npm
+
+install: npm i
+
+script: npm test
