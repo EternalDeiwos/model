@@ -1,4 +1,32 @@
-'use strict'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Model.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Model.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>'use strict'
 
 /**
  * Dependencies
@@ -251,7 +279,7 @@ class Model extends JSONDocument {
    *
    * @see {@link https://pouchdb.com/api.html#create_index|Index}
    *
-   * @type {Array<Index>}
+   * @type {Array&lt;Index>}
    */
   static get indexes () {
     return []
@@ -271,7 +299,7 @@ class Model extends JSONDocument {
    *
    * @see {@link https://pouchdb.com/api.html#query_database|MapReduceQuery}
    *
-   * @type {Array<MapReduceQuery>}
+   * @type {Array&lt;MapReduceQuery>}
    */
   static get queries () {
     return []
@@ -289,7 +317,7 @@ class Model extends JSONDocument {
    *
    * @param {String} fn - Named query (see Model.createQuery and Model.queries)
    * @param {Object} [options={}] {@link https://pouchdb.com/api.html#query_database|QueryOptions}
-   * @return {Promise<Array<ExtendedModel>>}
+   * @return {Promise&lt;Array&lt;ExtendedModel>>}
    */
   static query (fn, options = {}) {
     let ExtendedModel = this
@@ -311,7 +339,7 @@ class Model extends JSONDocument {
    * @see {@link https://pouchdb.com/api.html#create_index|Index}
    *
    * @param {Object} [options={}] {@link https://pouchdb.com/api.html#query_index|FindOptions}
-   * @return {Promise<Array<ExtendedModel>>}
+   * @return {Promise&lt;Array&lt;ExtendedModel>>}
    */
   static find (options = {}) {
     let ExtendedModel = this
@@ -336,7 +364,7 @@ class Model extends JSONDocument {
    *
    * @param {String} id
    * @param {Object} [options={}] {@link https://pouchdb.com/api.html#fetch_document|GetOptions}
-   * @return {Promise<ExtendedModel>}
+   * @return {Promise&lt;ExtendedModel>}
    */
   static get (id, options = {}) {
     let ExtendedModel = this
@@ -369,7 +397,7 @@ class Model extends JSONDocument {
    * @param {String} [data._id] - Omitting this results in a new _id being generated.
    * @param {String} [data._rev] - Required if updating an existing document
    * @param {Object} [data._attachments]
-   * @return {Promise<ExtendedModel>}
+   * @return {Promise&lt;ExtendedModel>}
    */
   static post (data) {
     let ExtendedModel = this
@@ -418,7 +446,7 @@ class Model extends JSONDocument {
    * @param {String} data._id
    * @param {String} [data._rev] - Required if updating an existing document
    * @param {Object} [data._attachments]
-   * @return {Promise<ExtendedModel>}
+   * @return {Promise&lt;ExtendedModel>}
    */
   static put (data) {
     let ExtendedModel = this
@@ -438,7 +466,7 @@ class Model extends JSONDocument {
    * @param {(Object|String)} data
    * @param {String} data._id
    * @param {String} data._rev
-   * @return {Promise<Boolean>}
+   * @return {Promise&lt;Boolean>}
    */
   static delete (data) {
     let ExtendedModel = this
@@ -480,7 +508,7 @@ class Model extends JSONDocument {
    *
    * @see {@link https://pouchdb.com/api.html#list_indexes|List Indexes}
    *
-   * @return {Promise<Array<Index>>}
+   * @return {Promise&lt;Array&lt;Index>>}
    */
   static getIndexes () {
     let { database } = this
@@ -555,7 +583,7 @@ class Model extends JSONDocument {
    *
    * @see {@link https://pouchdb.com/api.html#create_document|Put}
    *
-   * @return {Promise<ExtendedModel>}
+   * @return {Promise&lt;ExtendedModel>}
    */
   put () {
     let { database, name: modelName } = this.constructor
@@ -594,7 +622,7 @@ class Model extends JSONDocument {
    *
    * @see {@link https://pouchdb.com/api.html#delete_document|Delete}
    *
-   * @return {Promise<Boolean>}
+   * @return {Promise&lt;Boolean>}
    */
   delete () {
     let { database } = this.constructor
@@ -627,7 +655,7 @@ class Model extends JSONDocument {
    *
    * @param {String} name
    * @param {Object} [options={}] {@link https://pouchdb.com/api.html#get_attachment|GetAttachmentOptions}
-   * @return {Promise<ExtendedModel>}
+   * @return {Promise&lt;ExtendedModel>}
    */
   getAttachment (name, options = {}) {
     let { database } = this.constructor
@@ -669,7 +697,7 @@ class Model extends JSONDocument {
    * @param {Object} attachment {@link https://pouchdb.com/api.html#put_attachment|Attachment}
    * @param {String} attachment.content_type - mime type
    * @param {Buffer} attachment.data
-   * @return {Promise<ExtendedModel>}
+   * @return {Promise&lt;ExtendedModel>}
    */
   putAttachment (name, attachment) {
     let { content_type, data } = attachment
@@ -710,7 +738,7 @@ class Model extends JSONDocument {
    * @see {@link https://pouchdb.com/api.html#delete_attachment|Delete Attachment}
    *
    * @param {String} name
-   * @return {Promise<ExtendedModel>}
+   * @return {Promise&lt;ExtendedModel>}
    */
   deleteAttachment (name) {
     let { database } = this.constructor
@@ -719,7 +747,7 @@ class Model extends JSONDocument {
       .then(result => {
         this._rev = result.rev || this._rev
 
-        if (this._attachments && this._attachments[name]) {
+        if (this._attachments &amp;&amp; this._attachments[name]) {
           delete this._attachments[name]
         }
 
@@ -746,3 +774,26 @@ class Model extends JSONDocument {
  * @ignore
  */
 module.exports = Model
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="Model.html">Model</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.0</a> on Tue Jul 11 2017 19:28:15 GMT+0200 (SAST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
