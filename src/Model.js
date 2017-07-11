@@ -26,6 +26,17 @@ const ModelSchema = require('./ModelSchema')
 class Model extends JSONDocument {
 
   /**
+   * constructor
+   * @ignore
+   */
+  constructor (data, options) {
+    // TODO FIXME
+    // JSON Document hack
+    let overrideOptions = Object.assign({}, options, { filter: false })
+    super(data, overrideOptions)
+  }
+
+  /**
    * schema
    *
    * @static
@@ -586,7 +597,7 @@ class Model extends JSONDocument {
    * @return {Promise<Boolean>}
    */
   delete () {
-    let { database, name: modelName } = this.constructor
+    let { database } = this.constructor
 
     return database.remove(this)
       .then(result => !!result.ok)
@@ -619,7 +630,7 @@ class Model extends JSONDocument {
    * @return {Promise<ExtendedModel>}
    */
   getAttachment (name, options = {}) {
-    let { database, name: modelName } = this.constructor
+    let { database } = this.constructor
 
     return database.getAttachment(this._id, name, options)
       .then(attachment => {
@@ -634,7 +645,12 @@ class Model extends JSONDocument {
         let { status, message, stack } = error
 
         if (status === 404) {
-          return null
+          if (!this._attachments) {
+            this._attachments = {}
+          }
+
+          this._attachments[name] = null
+          return this
         }
 
         return Promise.reject(new InternalError(message, stack))
@@ -657,7 +673,7 @@ class Model extends JSONDocument {
    */
   putAttachment (name, attachment) {
     let { content_type, data } = attachment
-    let { database, name: modelName } = this.constructor
+    let { database } = this.constructor
 
     return database.putAttachment(this._id, name, this._rev, data, content_type)
       .then(result => {
@@ -697,7 +713,7 @@ class Model extends JSONDocument {
    * @return {Promise<ExtendedModel>}
    */
   deleteAttachment (name) {
-    let { database, name: modelName } = this.constructor
+    let { database } = this.constructor
 
     return database.removeAttachment(this._id, name, this._rev)
       .then(result => {
@@ -716,7 +732,7 @@ class Model extends JSONDocument {
           return this.constructor.get(this._id)
             .then(doc => {
               this._rev = doc._rev
-              return this.deleteAttachment(name, attachment)
+              return this.deleteAttachment(name)
             })
         }
 
