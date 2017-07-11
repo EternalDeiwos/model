@@ -544,7 +544,7 @@ describe('Model', () => {
     let post_result_with_rev = { id: 'foo', rev: '3-z' }
     let error_message = 'fubar'
 
-    before(() => {
+    beforeEach(() => {
       class Widgets extends Model {}
       klass = Widgets
     })
@@ -560,6 +560,12 @@ describe('Model', () => {
         klass.database.post.should.have.been.calledOnce
         klass.prototype.validate.restore()
       })
+    })
+
+    it('should throw if data is invalid', () => {
+      sinon.stub(klass.prototype, 'validate').returns({ valid: false })
+      klass.database = dbName
+      return klass.post().should.eventually.rejectedWith(ValidationError, 'Invalid document')
     })
 
     it('should proxy the call to the database', () => {
@@ -869,7 +875,7 @@ describe('Model', () => {
     let put_result = { id: 'foo', rev: '3-z' }
     let error_message = 'fubar'
 
-    before(() => {
+    beforeEach(() => {
       class Widgets extends Model {}
       klass = Widgets
     })
@@ -885,6 +891,12 @@ describe('Model', () => {
         klass.database.put.should.have.been.calledOnce
         klass.prototype.validate.restore()
       })
+    })
+
+    it('should throw if data is invalid', () => {
+      sinon.stub(klass.prototype, 'validate').returns({ valid: false })
+      klass.database = dbName
+      return klass.post().should.eventually.rejectedWith(ValidationError, 'Invalid document')
     })
 
     it('should proxy the call to the database', () => {
