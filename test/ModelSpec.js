@@ -58,7 +58,7 @@ describe('Model', () => {
   })
 
   /**
-   * schema
+   * static member schema
    */
   describe('static member schema', () => {
     it('should be an instance of JSONSchema', () => {
@@ -85,7 +85,7 @@ describe('Model', () => {
   })
 
   /**
-   * database
+   * static member database
    */
   describe('static member database', () => {
     let klass
@@ -107,59 +107,67 @@ describe('Model', () => {
       klass.createQuery.restore()
     })
 
-    describe('set', () => {
+    describe('setDatabase', () => {
       it('should configure the database with a string argument', () => {
-        klass.database = dbName
-        klass.database.should.be.instanceOf(PouchDB)
+        return klass.setDatabase(dbName).then(() => klass.database.should.be.instanceOf(PouchDB))
       })
 
       it('should configure the database with an object argument', () => {
-        klass.database = { name: dbName }
-        klass.database.should.be.instanceOf(PouchDB)
+        return klass.setDatabase({ name: dbName }).then(() => klass.database.should.be.instanceOf(PouchDB))
       })
 
       it('should close a previous database connection if a new one is created', () => {
-        let stub = sinon.stub()
+        let stub = sinon.stub().usingPromise(Promise).resolves()
         klass.internalDatabase = { close: stub }
-        klass.database = dbName
-        stub.should.have.been.calledOnce
+        return klass.setDatabase(dbName).then(() => stub.should.have.been.calledOnce)
       })
 
       it('should throw InvalidConfigurationError with invalid (boolean) option', () => {
-        expect(() => klass.database = false).to.throw(InvalidConfigurationError, 'Model Widgets database options invalid')
+        return expect(() => klass.setDatabase(false).to.throw(InvalidConfigurationError, 'Model Widgets database options invalid'))
       })
 
       it('should throw InvalidConfigurationError with invalid (number) option', () => {
-        expect(() => klass.database = 2).to.throw(InvalidConfigurationError, 'Model Widgets database options invalid')
+        return expect(() => klass.setDatabase(2).to.throw(InvalidConfigurationError, 'Model Widgets database options invalid'))
       })
 
       it('should throw InvalidConfigurationError with name unspecified', () => {
-        expect(() => klass.database = {}).to.throw(InvalidConfigurationError, 'Model Widgets database options invalid')
+        return expect(() => klass.setDatabase({}).to.throw(InvalidConfigurationError, 'Model Widgets database options invalid'))
       })
 
       it('should throw InvalidConfigurationError with invalid (boolean) name with object argument', () => {
-        expect(() => klass.database = { name: false }).to.throw(InvalidConfigurationError, 'Model Widgets database options invalid')
+        return expect(() => klass.setDatabase({ name: false }).to.throw(InvalidConfigurationError, 'Model Widgets database options invalid'))
       })
 
       it('should throw InvalidConfigurationError with invalid (number) name with object argument', () => {
-        expect(() => klass.database = { name: 2 }).to.throw(InvalidConfigurationError, 'Model Widgets database options invalid')
+        return expect(() => klass.setDatabase({ name: 2 }).to.throw(InvalidConfigurationError, 'Model Widgets database options invalid'))
       })
 
       it('should create database indices', () => {
-        klass.database = dbName
-        klass.createIndex.should.have.been.calledOnce
-        klass.createIndex.should.have.been.calledWith(index)
+        return klass.setDatabase(dbName).then(() => {
+          klass.createIndex.should.have.been.calledOnce
+          klass.createIndex.should.have.been.calledWith(index)
+        })
       })
 
       it('should create database map-reduce queries', () => {
-        klass.database = dbName
-        klass.createQuery.should.have.been.calledOnce
-        klass.createQuery.should.have.been.calledWith(query.name, query.query)
+        return klass.setDatabase(dbName).then(() => {
+          klass.createQuery.should.have.been.calledOnce
+          klass.createQuery.should.have.been.calledWith(query.name, query.query)
+        })
       })
 
-      describe.skip('database setup promise', () => {
-        it('should reject if database index creation fails')
-        it('should reject if database query creation fails')
+      describe('database setup promise', () => {
+        it('should reject if database index creation fails', () => {
+          klass.createIndex.restore()
+          sinon.stub(klass, 'createIndex').usingPromise(Promise).rejects()
+          return klass.setDatabase(dbName).should.eventually.be.rejectedWith(InvalidConfigurationError, 'Model Widgets index configuration invalid')
+        })
+
+        it('should reject if database query creation fails', () => {
+          klass.createQuery.restore()
+          sinon.stub(klass, 'createQuery').usingPromise(Promise).rejects()
+          return klass.setDatabase(dbName).should.eventually.be.rejectedWith(InvalidConfigurationError, 'Model Widgets map-reduce query configuration invalid')
+        })
       })
     })
 
@@ -169,12 +177,12 @@ describe('Model', () => {
       })
 
       it('should not throw if database is configured', () => {
-        klass.database = dbName
+        return klass.setDatabase(dbName)
         expect(() => klass.database).to.not.throw()
       })
 
       it('should return a reference to the database', () => {
-        klass.database = dbName
+        return klass.setDatabase(dbName)
         klass.database.name.should.equal(dbName)
       })
     })
@@ -185,38 +193,171 @@ describe('Model', () => {
    */
   describe('static member sync', () => {
     let klass
+    let defaultReplicationOptions = { live: true, retry: true }
+    let replicationOptions = { live: true, retry: true, foo: 'bar' }
 
     beforeEach(() => {
       class Widgets extends Model {}
-      Widgets.database = dbName
+      Widgets.setDatabase(dbName)
       klass = Widgets
     })
 
-    describe('set', () => {
-      it('should create a sync emitter', () => {
+    describe('setSync', () => {
+      it('should create a replication emitter', () => {
         klass.sync.length.should.equal(0)
-        klass.sync = remoteDbName
+        klass.setSync(remoteDbName)
         klass.sync.length.should.equal(1)
       })
 
+      it('should return a replication object', () => {
+        klass.setSync(remoteDbName).constructor.name.should.equal('Sync')
+      })
+
+      it('should use default replication options if none are provided', () => {
+        sinon.stub(klass.internalDatabase, 'sync').returns({ on: () => {}})
+        klass.setSync(remoteDbName)
+        expect(klass.internalDatabase.sync.firstCall.args[1]).to.deep.equal(defaultReplicationOptions)
+      })
+
+      it('should prefer provided replication options over the default', () => {
+        sinon.stub(klass.internalDatabase, 'sync').returns({ on: () => {}})
+        klass.setSync(remoteDbName, replicationOptions)
+        expect(klass.internalDatabase.sync.firstCall.args[1]).to.deep.equal(replicationOptions)
+      })
+
+      it('should register an error handler', () => {
+        let errorStub = sinon.stub()
+        sinon.stub(klass.internalDatabase, 'sync').returns({ on: errorStub })
+        klass.setSync(remoteDbName)
+        expect(klass.internalDatabase.sync.firstCall.args[1]).to.deep.equal(defaultReplicationOptions)
+        errorStub.firstCall.args[0].should.equal('error')
+        errorStub.firstCall.args[1].toString().should.equal((error => { throw new InternalError(error.message, error.stack) }).toString())
+      })
+
       it('should throw with invalid (boolean) option', () => {
-        expect(() => klass.sync = false).to.throw(InvalidConfigurationError, 'Model Widgets remote database options invalid')
+        expect(() => klass.setSync(false)).to.throw(InvalidConfigurationError, 'Model Widgets remote database options invalid')
       })
 
       it('should throw InvalidConfigurationError with invalid (number) option', () => {
-        expect(() => klass.sync = 2).to.throw(InvalidConfigurationError, 'Model Widgets remote database options invalid')
+        expect(() => klass.setSync(2)).to.throw(InvalidConfigurationError, 'Model Widgets remote database options invalid')
       })
 
       it('should throw InvalidConfigurationError with name unspecified with object option', () => {
-        expect(() => klass.sync = {}).to.throw(InvalidConfigurationError, 'Model Widgets remote database options invalid')
+        expect(() => klass.setSync({})).to.throw(InvalidConfigurationError, 'Model Widgets remote database options invalid')
       })
 
       it('should throw InvalidConfigurationError with invalid (boolean) name with object option', () => {
-        expect(() => klass.sync = { name: false }).to.throw(InvalidConfigurationError, 'Model Widgets remote database options invalid')
+        expect(() => klass.setSync({ name: false })).to.throw(InvalidConfigurationError, 'Model Widgets remote database options invalid')
       })
 
       it('should throw InvalidConfigurationError with invalid (number) name with object option', () => {
-        expect(() => klass.sync = { name: 2 }).to.throw(InvalidConfigurationError, 'Model Widgets remote database options invalid')
+        expect(() => klass.setSync({ name: 2 })).to.throw(InvalidConfigurationError, 'Model Widgets remote database options invalid')
+      })
+    })
+
+    describe('replicateTo', () => {
+      it('should create a replication emitter', () => {
+        klass.sync.length.should.equal(0)
+        klass.replicateTo(remoteDbName)
+        klass.sync.length.should.equal(1)
+      })
+
+      it('should return a replication object', () => {
+        klass.replicateTo(remoteDbName).constructor.name.should.equal('Replication')
+      })
+
+      it.skip('should use default replication options if none are provided', () => {
+        sinon.stub(klass.internalDatabase.replicate, 'to').returns({ on: () => {}})
+        klass.replicateTo(remoteDbName)
+        expect(klass.internalDatabase.replicate.to.firstCall.args[1]).to.deep.equal(defaultReplicationOptions)
+      })
+
+      it.skip('should prefer provided replication options over the default', () => {
+        sinon.stub(klass.internalDatabase.replicate, 'to').returns({ on: () => {}})
+        klass.replicateTo(remoteDbName, replicationOptions)
+        expect(klass.internalDatabase.replicate.to.firstCall.args[1]).to.deep.equal(replicationOptions)
+      })
+
+      it.skip('should register an error handler', () => {
+        let errorStub = sinon.stub()
+        sinon.stub(klass.internalDatabase.replicate, 'to').returns({ on: errorStub })
+        klass.replicateTo(remoteDbName)
+        expect(klass.internalDatabase.replicate.to.firstCall.args[1]).to.deep.equal(defaultReplicationOptions)
+        errorStub.firstCall.args[0].should.equal('error')
+        errorStub.firstCall.args[1].toString().should.equal((error => { throw new InternalError(error.message, error.stack) }).toString())
+      })
+
+      it('should throw InvalidConfigurationError with invalid (boolean) option', () => {
+        expect(() => klass.replicateTo(false)).to.throw(InvalidConfigurationError, 'Model Widgets remote database options invalid')
+      })
+
+      it('should throw InvalidConfigurationError with invalid (number) option', () => {
+        expect(() => klass.replicateTo(2)).to.throw(InvalidConfigurationError, 'Model Widgets remote database options invalid')
+      })
+
+      it('should throw InvalidConfigurationError with name unspecified with object option', () => {
+        expect(() => klass.replicateTo({})).to.throw(InvalidConfigurationError, 'Model Widgets remote database options invalid')
+      })
+
+      it('should throw InvalidConfigurationError with invalid (boolean) name with object option', () => {
+        expect(() => klass.replicateTo({ name: false })).to.throw(InvalidConfigurationError, 'Model Widgets remote database options invalid')
+      })
+
+      it('should throw InvalidConfigurationError with invalid (number) name with object option', () => {
+        expect(() => klass.replicateTo({ name: 2 })).to.throw(InvalidConfigurationError, 'Model Widgets remote database options invalid')
+      })
+    })
+
+    describe('replicateFrom', () => {
+      it('should create a replication emitter', () => {
+        klass.sync.length.should.equal(0)
+        klass.replicateFrom(remoteDbName)
+        klass.sync.length.should.equal(1)
+      })
+
+      it('should return a replication object', () => {
+        klass.replicateFrom(remoteDbName).constructor.name.should.equal('Replication')
+      })
+
+      it.skip('should use default replication options if none are provided', () => {
+        sinon.stub(klass.internalDatabase.replicate, 'from').returns({ on: () => {}})
+        klass.replicateFrom(remoteDbName)
+        expect(klass.internalDatabase.replicate.from.firstCall.args[1]).to.deep.equal(defaultReplicationOptions)
+      })
+
+      it.skip('should prefer provided replication options over the default', () => {
+        sinon.stub(klass.internalDatabase.replicate, 'from').returns({ on: () => {}})
+        klass.replicateTo(remoteDbName, replicationOptions)
+        expect(klass.internalDatabase.replicate.from.firstCall.args[1]).to.deep.equal(replicationOptions)
+      })
+
+      it.skip('should register an error handler', () => {
+        let errorStub = sinon.stub()
+        sinon.stub(klass.internalDatabase.replicate, 'from').returns({ on: errorStub })
+        klass.replicateFrom(remoteDbName)
+        expect(klass.internalDatabase.replicate.from.firstCall.args[1]).to.deep.equal(defaultReplicationOptions)
+        errorStub.firstCall.args[0].should.equal('error')
+        errorStub.firstCall.args[1].toString().should.equal((error => { throw new InternalError(error.message, error.stack) }).toString())
+      })
+
+      it('should throw InvalidConfigurationError with invalid (boolean) option', () => {
+        expect(() => klass.replicateFrom(false)).to.throw(InvalidConfigurationError, 'Model Widgets remote database options invalid')
+      })
+
+      it('should throw InvalidConfigurationError with invalid (number) option', () => {
+        expect(() => klass.replicateFrom(2)).to.throw(InvalidConfigurationError, 'Model Widgets remote database options invalid')
+      })
+
+      it('should throw InvalidConfigurationError with name unspecified with object option', () => {
+        expect(() => klass.replicateFrom({})).to.throw(InvalidConfigurationError, 'Model Widgets remote database options invalid')
+      })
+
+      it('should throw InvalidConfigurationError with invalid (boolean) name with object option', () => {
+        expect(() => klass.replicateFrom({ name: false })).to.throw(InvalidConfigurationError, 'Model Widgets remote database options invalid')
+      })
+
+      it('should throw InvalidConfigurationError with invalid (number) name with object option', () => {
+        expect(() => klass.replicateFrom({ name: 2 })).to.throw(InvalidConfigurationError, 'Model Widgets remote database options invalid')
       })
     })
 
@@ -230,84 +371,6 @@ describe('Model', () => {
   })
 
   /**
-   * replicateTo
-   */
-  describe('static member replicateTo', () => {
-    let klass
-
-    beforeEach(() => {
-      class Widgets extends Model {}
-      Widgets.database = dbName
-      klass = Widgets
-    })
-
-    it('should create a sync emitter', () => {
-      klass.sync.length.should.equal(0)
-      klass.replicateTo = remoteDbName
-      klass.sync.length.should.equal(1)
-    })
-
-    it('should throw InvalidConfigurationError with invalid (boolean) option', () => {
-      expect(() => klass.replicateTo = false).to.throw(InvalidConfigurationError, 'Model Widgets remote database options invalid')
-    })
-
-    it('should throw InvalidConfigurationError with invalid (number) option', () => {
-      expect(() => klass.replicateTo = 2).to.throw(InvalidConfigurationError, 'Model Widgets remote database options invalid')
-    })
-
-    it('should throw InvalidConfigurationError with name unspecified with object option', () => {
-      expect(() => klass.replicateTo = {}).to.throw(InvalidConfigurationError, 'Model Widgets remote database options invalid')
-    })
-
-    it('should throw InvalidConfigurationError with invalid (boolean) name with object option', () => {
-      expect(() => klass.replicateTo = { name: false }).to.throw(InvalidConfigurationError, 'Model Widgets remote database options invalid')
-    })
-
-    it('should throw InvalidConfigurationError with invalid (number) name with object option', () => {
-      expect(() => klass.replicateTo = { name: 2 }).to.throw(InvalidConfigurationError, 'Model Widgets remote database options invalid')
-    })
-  })
-
-  /**
-   * replicateFrom
-   */
-  describe('static member replicateFrom', () => {
-    let klass
-
-    beforeEach(() => {
-      class Widgets extends Model {}
-      Widgets.database = dbName
-      klass = Widgets
-    })
-
-    it('should create a sync emitter', () => {
-      klass.sync.length.should.equal(0)
-      klass.replicateFrom = remoteDbName
-      klass.sync.length.should.equal(1)
-    })
-
-    it('should throw InvalidConfigurationError with invalid (boolean) option', () => {
-      expect(() => klass.replicateFrom = false).to.throw(InvalidConfigurationError, 'Model Widgets remote database options invalid')
-    })
-
-    it('should throw InvalidConfigurationError with invalid (number) option', () => {
-      expect(() => klass.replicateFrom = 2).to.throw(InvalidConfigurationError, 'Model Widgets remote database options invalid')
-    })
-
-    it('should throw InvalidConfigurationError with name unspecified with object option', () => {
-      expect(() => klass.replicateFrom = {}).to.throw(InvalidConfigurationError, 'Model Widgets remote database options invalid')
-    })
-
-    it('should throw InvalidConfigurationError with invalid (boolean) name with object option', () => {
-      expect(() => klass.replicateFrom = { name: false }).to.throw(InvalidConfigurationError, 'Model Widgets remote database options invalid')
-    })
-
-    it('should throw InvalidConfigurationError with invalid (number) name with object option', () => {
-      expect(() => klass.replicateFrom = { name: 2 }).to.throw(InvalidConfigurationError, 'Model Widgets remote database options invalid')
-    })
-  })
-
-  /**
    * changes
    */
   describe('static member changes', () => {
@@ -315,37 +378,43 @@ describe('Model', () => {
 
     beforeEach(() => {
       class Widgets extends Model {}
-      Widgets.database = dbName
+      Widgets.setDatabase(dbName)
       klass = Widgets
     })
 
-    describe('set', () => {
+    describe('setChanges', () => {
+
       it('should set the change feed', () => {
-        expect(klass.changes).to.be.undefined
-        klass.changes = { live: true, retry: true }
-        expect(klass.changes).to.not.be.undefined
+        klass.changes.length.should.equal(0)
+        klass.setChanges({ live: true, include_docs: true, since: 'now' })
       })
 
-      it('should cancel the old change feed when creating another', () => {
-        expect(klass.changes).to.be.undefined
-        klass.changes = { live: true, retry: true }
-        expect(klass.changes).to.not.be.undefined
-        sinon.stub(klass.internalChanges, 'cancel')
-        let cancelSpy = sinon.spy()
-        klass.internalChanges.cancel = cancelSpy
-        klass.changes = { live: true, retry: true }
-        cancelSpy.should.have.been.calledOnce
+      it('should add an instance of a PouchDB Change Feed to the changes array', () => {
+        klass.changes.length.should.equal(0)
+        klass.setChanges({ live: true, include_docs: true, since: 'now' })
+        expect(klass.changes[0].constructor.name.startsWith('Changes')).to.be.true
+      })
+
+      it('should use default change feed config if none supplied', () => {
+        expect(() => klass.setChanges()).to.not.throw()
+      })
+
+      it('should return the new change feed', () => {
+        klass.setChanges({ live: true, include_docs: true, since: 'now' })
+        klass.changes[0].should.have.nested.property('constructor.name')
+        expect(klass.changes[0].constructor.name.startsWith('Changes')).to.be.true
       })
     })
 
     describe('get', () => {
-      it('should be undefined before a change feed is created', () => {
-        expect(klass.changes).to.be.undefined
+      it('should be an empty array before a change feed is created', () => {
+        expect(Array.isArray(klass.changes)).to.be.true
+        klass.changes.length.should.equal(0)
       })
 
-      it('should not be undefined after a change feed is created', () => {
-        klass.changes = { live: true, retry: true }
-        expect(klass.changes).to.not.be.undefined
+      it('should not be an empty array after a change feed is created', () => {
+        klass.setChanges({ live: true, include_docs: true, since: 'now' })
+        klass.changes.length.should.equal(1)
       })
     })
   })
@@ -564,7 +633,7 @@ describe('Model', () => {
 
     it('should throw if data is invalid', () => {
       sinon.stub(klass.prototype, 'validate').returns({ valid: false })
-      klass.database = dbName
+      return klass.setDatabase(dbName)
       return klass.post().should.eventually.rejectedWith(ValidationError, 'Invalid document')
     })
 
@@ -590,23 +659,6 @@ describe('Model', () => {
       })
     })
 
-    it('should get and retry if the post rejects with a 409', () => {
-      let err = new Error(error_message)
-      err.status = 409
-      klass.internalDatabase = {
-        post: sinon.stub().usingPromise(Promise).onFirstCall().rejects(err)
-          .onSecondCall().resolves(post_result_with_rev),
-        get: sinon.stub().usingPromise(Promise).resolves(post_doc_with_rev)
-      }
-
-      let data = {}
-      return klass.post(data).then(() => {
-        klass.internalDatabase.post.should.have.been.calledTwice
-        klass.internalDatabase.get.should.have.been.calledOnce
-        data._rev.should.equal('3-z')
-      })
-    })
-
     it('should reject with InternalError if post rejects with any other status', () => {
       klass.internalDatabase = {
         post: sinon.stub().usingPromise(Promise).rejects(new Error(error_message))
@@ -628,7 +680,7 @@ describe('Model', () => {
     beforeEach(() => {
       class Widgets extends Model {}
       klass = Widgets
-      klass.database = dbName
+      return klass.setDatabase(dbName)
     })
 
     it('should proxy member put', () => {
@@ -654,7 +706,7 @@ describe('Model', () => {
     beforeEach(() => {
       class Widgets extends Model {}
       klass = Widgets
-      klass.database = dbName
+      return klass.setDatabase(dbName)
     })
 
     it('should proxy member delete', () => {
@@ -839,12 +891,12 @@ describe('Model', () => {
       klass = Widgets
       klass.internalDatabase = { close: sinon.stub().usingPromise(Promise).resolves(resolveData) }
       klass.internalSync = [{ cancel: sinon.stub().usingPromise(Promise).resolves() }, { cancel: sinon.stub().usingPromise(Promise).resolves() }]
-      klass.internalChanges = { cancel: sinon.stub().usingPromise(Promise).resolves() }
+      klass.internalChanges = [{ cancel: sinon.stub().usingPromise(Promise).resolves() }]
     })
 
     it('should cancel change feed', () => {
       return klass.close().then(() => {
-        klass.changes.cancel.should.have.been.called
+        klass.changes[0].cancel.should.have.been.called
       })
     })
 
@@ -895,8 +947,9 @@ describe('Model', () => {
 
     it('should throw if data is invalid', () => {
       sinon.stub(klass.prototype, 'validate').returns({ valid: false })
-      klass.database = dbName
-      return klass.post().should.eventually.rejectedWith(ValidationError, 'Invalid document')
+      return klass.setDatabase(dbName).then(() => {
+        return klass.post().should.eventually.rejectedWith(ValidationError, 'Invalid document')
+      })
     })
 
     it('should proxy the call to the database', () => {
