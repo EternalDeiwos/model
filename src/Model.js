@@ -40,6 +40,7 @@ class Model extends JSONDocument {
    * schema
    *
    * @static
+   * @abstract
    *
    * @description
    * Model Schema
@@ -50,191 +51,6 @@ class Model extends JSONDocument {
    */
   static get schema () {
     return ModelSchema
-  }
-
-  /**
-   * set database
-   *
-   * @static
-   *
-   * @description
-   * Configure the database
-   *
-   * @see {@link https://pouchdb.com/api.html#create_database|PouchDB Constructor Options}
-   *
-   * @type {PouchDB}
-   */
-  static set database (options) {
-    // Close current open database
-    try {
-      this.database.close()
-    } catch (error) {
-    }
-
-    // Try create database connection
-    try {
-      Object.defineProperty(this, 'internalDatabase', { value: new PouchDB(options), enumerable: true, configurable: true })
-    } catch (error) {
-      throw new InvalidConfigurationError(`Model ${this.name} database options invalid`)
-    }
-
-    // TODO these are asyncronous... this should be handled better
-    // Create indices
-    let indexPromises = this.indexes.map(index => this.createIndex(index))
-
-    // Create queries
-    let queryPromises = this.queries.map(query => this.createQuery(query.name, query.query))
-  }
-
-  /**
-   * set sync
-   *
-   * @static
-   *
-   * @description
-   * Configure a remote database for bidirectional replication
-   *
-   * @see {@link https://pouchdb.com/api.html#create_database|PouchDB Constructor Options}
-   * @see {@link https://pouchdb.com/api.html#sync|Sync}
-   *
-   * @type {Replication}
-   */
-  static set sync (options) {
-    // Try create remote connection and sync
-    try {
-      let remote = new PouchDB(options)
-      let sync = this.database.sync(remote, {
-        live: true,
-        retry: true
-      })
-
-      sync.on('error', error => {
-        throw new InternalError(error.message, error.stack)
-      })
-
-      this.sync.push(sync)
-    } catch (error) {
-      throw new InvalidConfigurationError(`Model ${this.name} remote database options invalid for sync`)
-    }
-  }
-
-  /**
-   * replicateTo
-   *
-   * @static
-   *
-   * @description
-   * Configure a remote database for unidirectional replication
-   *
-   * @see {@link https://pouchdb.com/api.html#create_database|PouchDB Constructor Options}
-   * @see {@link https://pouchdb.com/api.html#replication|Replication}
-   *
-   * @type {Replication}
-   */
-  static set replicateTo (options) {
-    // Try create remote connection and replicate
-    try {
-      let remote = new PouchDB(options)
-      let replicate = this.database.replicate.to(remote, {
-        live: true,
-        retry: true
-      })
-
-      replicate.on('error', error => {
-        throw new InternalError(error.message, error.stack)
-      })
-
-      this.sync.push(replicate)
-    } catch (error) {
-      throw new InvalidConfigurationError(`Model ${this.name} remote database options invalid for replicate`)
-    }
-  }
-
-  /**
-   * replicateFrom
-   *
-   * @static
-   *
-   * @description
-   * Configure a remote database for unidirectional replication
-   *
-   * @see {@link https://pouchdb.com/api.html#create_database|PouchDB Constructor Options}
-   * @see {@link https://pouchdb.com/api.html#replication|Replication}
-   *
-   * @type {Replication}
-   */
-  static set replicateFrom (options) {
-    // Try create remote connection and replicate
-    try {
-      let remote = new PouchDB(options)
-      let replicate = this.database.replicate.from(remote, {
-        live: true,
-        retry: true
-      })
-
-      replicate.on('error', error => {
-        throw new InternalError(error.message, error.stack)
-      })
-
-      this.sync.push(replicate)
-    } catch (error) {
-      throw new InvalidConfigurationError(`Model ${this.name} remote database options invalid for replicate`)
-    }
-  }
-
-  /**
-   * set changes
-   *
-   * @static
-   *
-   * @description
-   * Configure a change feed for the database
-   *
-   * @see {@link https://pouchdb.com/api.html#changes|PouchDB Changes Options}
-   *
-   * @type {ChangeFeed}
-   */
-  static set changes (options) {
-    // Cancel existing change feed
-    if (this.changes) {
-      this.changes.cancel()
-    }
-
-    Object.defineProperty(this, 'internalChanges', { value: this.database.changes(options), enumerable: true, configurable: true })
-  }
-
-  /**
-   * get database
-   * @ignore
-   */
-  static get database () {
-    let { internalDatabase } = this
-
-    if (!internalDatabase) {
-      throw new OperationError(`Model ${this.name} has no database set`)
-    }
-
-    return internalDatabase
-  }
-
-  /**
-   * get sync
-   * @ignore
-   */
-  static get sync () {
-    if (!this.internalSync) {
-      Object.defineProperty(this, 'internalSync', { value: [], enumerable: true })
-    }
-
-    return this.internalSync
-  }
-
-  /**
-   * get changes
-   * @ignore
-   */
-  static get changes () {
-    return this.internalChanges
   }
 
   /**
@@ -275,6 +91,191 @@ class Model extends JSONDocument {
    */
   static get queries () {
     return []
+  }
+
+  /**
+   * get database
+   *
+   * @type {PouchDB}
+   */
+  static get database () {
+    let { internalDatabase } = this
+
+    if (!internalDatabase) {
+      throw new OperationError(`Model ${this.name} has no database set`)
+    }
+
+    return internalDatabase
+  }
+
+  /**
+   * get sync
+   *
+   * @type {Array<Sync>}
+   */
+  static get sync () {
+    if (!this.internalSync) {
+      this.internalSync = []
+    }
+
+    return this.internalSync
+  }
+
+  /**
+   * get changes
+   *
+   * @type {Array<ChangeFeed>}
+   */
+  static get changes () {
+    if (!this.internalChanges) {
+      this.internalChanges = []
+    }
+
+    return this.internalChanges
+  }
+
+  /**
+   * setDatabase
+   *
+   * @static
+   *
+   * @description
+   * Configure the database
+   *
+   * @param {Object} options - {@link https://pouchdb.com/api.html#create_database|PouchDB Constructor Options}
+   *
+   * @return {Promise}
+   */
+  static setDatabase (options) {
+    // Close current open database
+    let closePromise
+    if (this.internalDatabase) {
+      closePromise = this.internalDatabase.close()
+    } else {
+      closePromise = Promise.resolve()
+    }
+
+    // Try create database connection
+    try {
+      this.internalDatabase = new PouchDB(options)
+    } catch (error) {
+      throw new InvalidConfigurationError(`Model ${this.name} database options invalid`)
+    }
+
+    // Create indices
+    let indexPromises = this.indexes.map(index => this.createIndex(index))
+
+    // Create queries
+    let queryPromises = this.queries.map(query => this.createQuery(query.name, query.query))
+
+    return closePromise
+      .then(() => Promise.all([
+        Promise.all(indexPromises).catch(error => Promise.reject(new InvalidConfigurationError(`Model ${this.name} index configuration invalid`))),
+        Promise.all(queryPromises).catch(error => Promise.reject(new InvalidConfigurationError(`Model ${this.name} map-reduce query configuration invalid`)))
+      ]))
+      .then(([indexResults, queryResults]) => indexResults.concat(queryResults))
+  }
+
+  /**
+   * setSync
+   *
+   * @static
+   *
+   * @description
+   * Configure a remote database for bidirectional replication
+   *
+   * @param {Object} options - {@link https://pouchdb.com/api.html#create_database|PouchDB Constructor Options}
+   * @param {Object} [replicationOptions = { live: true, retry: true }] - {@link https://pouchdb.com/api.html#sync|Sync Options}
+   */
+  static setSync (options, replicationOptions = { live: true, retry: true }) {
+    // Try create remote connection and sync
+    try {
+      let remote = new PouchDB(options)
+      let sync = this.database.sync(remote, replicationOptions)
+
+      sync.on('error', error => { throw new InternalError(error.message, error.stack) })
+
+      this.sync.push(sync)
+      return sync
+
+    } catch (error) {
+      throw new InvalidConfigurationError(`Model ${this.name} remote database options invalid for sync`)
+    }
+  }
+
+  /**
+   * replicateTo
+   *
+   * @static
+   *
+   * @description
+   * Configure a remote database for unidirectional replication
+   *
+   * @param {Object} options - {@link https://pouchdb.com/api.html#create_database|PouchDB Constructor Options}
+   * @param {Ibject} [replicationOptions = { live: true, retry: true }] - {@link https://pouchdb.com/api.html#replication|Replication Options}
+   */
+  static replicateTo (options, replicationOptions = { live: true, retry: true }) {
+    // Try create remote connection and replicate
+    try {
+      let remote = new PouchDB(options)
+      let replicate = this.database.replicate.to(remote, replicationOptions)
+
+      replicate.on('error', error => { throw new InternalError(error.message, error.stack) })
+
+      this.sync.push(replicate)
+      return replicate
+
+    } catch (error) {
+      throw new InvalidConfigurationError(`Model ${this.name} remote database options invalid for replicate`)
+    }
+  }
+
+  /**
+   * replicateFrom
+   *
+   * @static
+   *
+   * @description
+   * Configure a remote database for unidirectional replication
+   *
+   * @param {Object} options - {@link https://pouchdb.com/api.html#create_database|PouchDB Constructor Options}
+   * @param {Ibject} [replicationOptions = { live: true, retry: true }] - {@link https://pouchdb.com/api.html#replication|Replication Options}
+   */
+  static replicateFrom (options, replicationOptions = { live: true, retry: true }) {
+    // Try create remote connection and replicate
+    try {
+      let remote = new PouchDB(options)
+      let replicate = this.database.replicate.from(remote, replicationOptions)
+
+      replicate.on('error', error => { throw new InternalError(error.message, error.stack) })
+
+      this.sync.push(replicate)
+      return replicate
+
+    } catch (error) {
+      throw new InvalidConfigurationError(`Model ${this.name} remote database options invalid for replicate`)
+    }
+  }
+
+  /**
+   * setChanges
+   *
+   * @static
+   *
+   * @description
+   * Configure a change feed for the database
+   *
+   * @param {Object} [options = { live: true, include_docs: true, since: 'now' }] - {@link https://pouchdb.com/api.html#changes|PouchDB Changes Options}
+   *
+   * @return {Promise}
+   */
+  static setChanges (options = { live: true, include_docs: true, since: 'now' }) {
+    let { database, changes } = this
+
+    let changeFeed = database.changes(options)
+    changes.push(changeFeed)
+
+    return changeFeed
   }
 
   /**
@@ -388,20 +389,7 @@ class Model extends JSONDocument {
         instance._rev = result.rev
         return instance
       })
-      .catch(error => {
-        let { status, message, stack } = error
-
-        // Database Conflict
-        if (status === 409) {
-          return this.get(instance._id)
-            .then(doc => {
-              data._rev = doc._rev
-              return this.post(data)
-            })
-        }
-
-        return Promise.reject(new InternalError(message, stack))
-      })
+      .catch(error => Promise.reject(new InternalError(error.message, error.stack)))
   }
 
   /**
@@ -495,7 +483,7 @@ class Model extends JSONDocument {
    * @static
    *
    * @description
-   * Create an named on the database collection
+   * Create a named query on the database collection
    *
    * @see {@link https://pouchdb.com/api.html#query_database|MapReduceQuery}
    *
@@ -529,7 +517,7 @@ class Model extends JSONDocument {
    * @static
    *
    * @description
-   * Close the database and replication connection and change feed
+   * Close the database and replication connections and change feeds
    *
    * @return {Promise}
    */
@@ -537,7 +525,7 @@ class Model extends JSONDocument {
     let { database, changes, sync } = this
 
     if (changes) {
-      changes.cancel()
+      changes.forEach(change => change.cancel())
     }
 
     if (sync) {
@@ -689,6 +677,7 @@ class Model extends JSONDocument {
       .catch(error => {
         let { status, message, stack } = error
 
+        // Database conflict
         if (status === 409) {
           return this.constructor.get(this._id)
             .then(doc => {
