@@ -24,7 +24,7 @@ let expect = chai.expect
  * Code Under Test
  * @ignore
  */
-const Model = require(path.join(cwd, 'src', 'Model'))
+const { Model } = require(path.join(cwd, 'src'))
 const ModelSchema = require(path.join(cwd, 'src', 'ModelSchema'))
 const PouchDB = require('pouchdb')
 const { JSONSchema, JSONDocument } = require('@trust/json-document')
@@ -47,15 +47,6 @@ let remoteDbName = 'test/remote'
  * @ignore
  */
 describe('Model', () => {
-
-  /**
-   * model extends
-   */
-  describe('static member schema', () => {
-    it('static member schema should extend JSONDocument', () => {
-      Object.getPrototypeOf(Model).should.equal(JSONDocument)
-    })
-  })
 
   /**
    * static member schema
