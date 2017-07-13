@@ -186,6 +186,8 @@ class Model extends JSONDocument {
    *
    * @param {Object} options - {@link https://pouchdb.com/api.html#create_database|PouchDB Constructor Options}
    * @param {Object} [replicationOptions = { live: true, retry: true }] - {@link https://pouchdb.com/api.html#sync|Sync Options}
+   *
+   * @return {Sync}
    */
   static setSync (options, replicationOptions = { live: true, retry: true }) {
     // Try create remote connection and sync
@@ -213,6 +215,8 @@ class Model extends JSONDocument {
    *
    * @param {Object} options - {@link https://pouchdb.com/api.html#create_database|PouchDB Constructor Options}
    * @param {Ibject} [replicationOptions = { live: true, retry: true }] - {@link https://pouchdb.com/api.html#replication|Replication Options}
+   *
+   * @return {Replication}
    */
   static replicateTo (options, replicationOptions = { live: true, retry: true }) {
     // Try create remote connection and replicate
@@ -239,7 +243,9 @@ class Model extends JSONDocument {
    * Configure a remote database for unidirectional replication
    *
    * @param {Object} options - {@link https://pouchdb.com/api.html#create_database|PouchDB Constructor Options}
-   * @param {Ibject} [replicationOptions = { live: true, retry: true }] - {@link https://pouchdb.com/api.html#replication|Replication Options}
+   * @param {Object} [replicationOptions = { live: true, retry: true }] - {@link https://pouchdb.com/api.html#replication|Replication Options}
+   *
+   * @return {Replication}
    */
   static replicateFrom (options, replicationOptions = { live: true, retry: true }) {
     // Try create remote connection and replicate
@@ -267,7 +273,7 @@ class Model extends JSONDocument {
    *
    * @param {Object} [options = { live: true, include_docs: true, since: 'now' }] - {@link https://pouchdb.com/api.html#changes|PouchDB Changes Options}
    *
-   * @return {Promise}
+   * @return {Changes}
    */
   static setChanges (options = { live: true, include_docs: true, since: 'now' }) {
     let { database, changes } = this
