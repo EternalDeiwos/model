@@ -31,6 +31,12 @@ const MixinModel = superclass => class Model extends superclass {
   constructor (data, options) {
     // TODO FIXME
     // JSON Document hack
+    console.log(superclass.name)
+    if (superclass.name === 'JWD') {
+      data.type = data.type || 'JWS'
+      data.serialization = data.serialization || 'document'
+    }
+
     let overrideOptions = Object.assign({}, options, { filter: false })
     super(data, overrideOptions)
   }
