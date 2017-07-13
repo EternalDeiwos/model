@@ -615,7 +615,7 @@ describe('CryptoModel', () => {
         post: sinon.stub().usingPromise(Promise).resolves(post_result_with_rev)
       }
 
-      return klass.post().then(doc => {
+      return klass.post({}).then(doc => {
         klass.prototype.validate.should.have.been.calledOnce
         klass.database.post.should.have.been.calledOnce
         klass.prototype.validate.restore()
@@ -625,7 +625,7 @@ describe('CryptoModel', () => {
     it('should throw if data is invalid', () => {
       sinon.stub(klass.prototype, 'validate').returns({ valid: false })
       return klass.setDatabase(dbName)
-      return klass.post().should.eventually.rejectedWith(ValidationError, 'Invalid document')
+      return klass.post({}).should.eventually.rejectedWith(ValidationError, 'Invalid document')
     })
 
     it('should proxy the call to the database', () => {
@@ -633,7 +633,7 @@ describe('CryptoModel', () => {
         post: sinon.stub().usingPromise(Promise).resolves(post_result_with_rev)
       }
 
-      return klass.post().then(doc => {
+      return klass.post({}).then(doc => {
         doc.should.deep.equal(post_doc_with_rev)
         klass.database.post.should.have.been.calledOnce
       })
@@ -644,7 +644,7 @@ describe('CryptoModel', () => {
         post: sinon.stub().usingPromise(Promise).resolves(post_result_with_rev)
       }
 
-      return klass.post().then(doc => {
+      return klass.post({}).then(doc => {
         doc.should.be.instanceOf(klass)
         klass.database.post.should.have.been.calledOnce
       })
@@ -655,7 +655,7 @@ describe('CryptoModel', () => {
         post: sinon.stub().usingPromise(Promise).rejects(new Error(error_message))
       }
 
-      return klass.post().should.eventually.be.rejectedWith(InternalError, error_message)
+      return klass.post({}).should.eventually.be.rejectedWith(InternalError, error_message)
     })
   })
 
@@ -938,9 +938,11 @@ describe('CryptoModel', () => {
 
     it('should throw if data is invalid', () => {
       sinon.stub(klass.prototype, 'validate').returns({ valid: false })
-      return klass.setDatabase(dbName).then(() => {
-        return klass.post().should.eventually.rejectedWith(ValidationError, 'Invalid document')
-      })
+      klass.internalDatabase = {
+        put: sinon.stub().usingPromise(Promise).resolves(put_result)
+      }
+
+      return new klass(put_doc).put().should.eventually.rejectedWith(ValidationError, 'Invalid document')
     })
 
     it('should proxy the call to the database', () => {
