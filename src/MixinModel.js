@@ -4,7 +4,6 @@
  * Dependencies
  * @ignore
  */
-const { JSONDocument } = require('@trust/json-document')
 const PouchDB = require('pouchdb')
   .plugin(require('pouchdb-find'))
 
@@ -21,9 +20,9 @@ const ModelSchema = require('./ModelSchema')
  * @class
  * A PouchDB adapter for the json-document modelling framework. Extends {@link https://www.npmjs.com/package/@trust/json-document|JSONDocument}.
  *
- * @extends JSONDocument
+ * @param {Class} superclass - should be JSONDocument or JWD
  */
-class Model extends JSONDocument {
+const MixinModel = superclass => class Model extends superclass {
 
   /**
    * constructor
@@ -740,4 +739,4 @@ class Model extends JSONDocument {
  * Exports
  * @ignore
  */
-module.exports = Model
+module.exports = MixinModel
