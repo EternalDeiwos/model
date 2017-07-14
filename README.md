@@ -1,8 +1,8 @@
-# PouchDB JSONDocument Model _(@trust/pouch-model)_
+# PouchDB JSONDocument Model _(@trust/model)_
 
 [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat-square)](https://github.com/RichardLitt/standard-readme)
-[![Build Status](https://travis-ci.org/EternalDeiwos/pouch-model.svg?branch=master)](https://travis-ci.org/EternalDeiwos/pouch-model)
-[![Coverage Status](https://coveralls.io/repos/github/EternalDeiwos/pouch-model/badge.svg?branch=master)](https://coveralls.io/github/EternalDeiwos/pouch-model?branch=master)
+[![Build Status](https://travis-ci.org/EternalDeiwos/model.svg?branch=master)](https://travis-ci.org/EternalDeiwos/model)
+[![codecov](https://codecov.io/gh/EternalDeiwos/model/branch/master/graph/badge.svg)](https://codecov.io/gh/EternalDeiwos/model)
 
 >  PouchDB adapter for the [json-document](https://www.npmjs.com/package/@trust/json-document) modelling framework.
 
@@ -23,22 +23,24 @@ TODO: Fill out this long description.
 ## Install
 
 ```
-$ npm install @trust/pouch-model --save
+$ npm install @trust/model --save
 ```
 
 ## Usage
 
 ```
-const { Model } = require('@trust/pouch-model')
+const { DocumentModel, CryptoModel } = require('@trust/model')
 ```
+
+`DocumentModel` and `CryptoModel` have equivalent functionality with the difference of `CryptoModel` extending `JWD` from `@trust/jose`, which introduces various cryptographic functions. For more information please see [`@trust/jose`](https://github.com/anvilresearch/jose)
 
 ## Develop
 
 ### Install
 
 ```
-$ git clone git@github.com:EternalDeiwos/pouch-model.git
-$ cd pouch-model
+$ git clone git@github.com:EternalDeiwos/model.git
+$ cd model
 $ npm install
 ```
 
@@ -48,15 +50,21 @@ $ npm install
 $ npm test
 ```
 
+### Coverage
+
+```
+$ npm run coverage
+```
+
 ## API
 
-Full documentation can be found [here](https://eternaldeiwos.github.io/pouch-model)
+Full documentation can be found [here](https://eternaldeiwos.github.io/model)
 
 ## Contribute
 
 ### Issues
 
-* please file [issues](https://github.com/EternalDeiwos/pouch-model/issues) :)
+* please file [issues](https://github.com/EternalDeiwos/model/issues) :)
 * for bug reports, include relevant details such as platform, version, relevant data, and stack traces
 * be sure to check for existing issues before opening new ones
 * read the documentation before asking questions
@@ -79,6 +87,7 @@ Full documentation can be found [here](https://eternaldeiwos.github.io/pouch-mod
 
 #### Style guide
 
+* [Conventional Changelog](https://github.com/bcoe/conventional-changelog-standard/blob/master/convention.md)
 * ES6
 * Standard JavaScript
 * jsdocs
@@ -99,11 +108,12 @@ This project is part of a greater group of projects visible [here](https://www.n
 
 ### Code of conduct
 
-* @trust/pouch-model follows the [Contributor Covenant](http://contributor-covenant.org/version/1/3/0/) Code of Conduct.
+* @trust/model follows the [Contributor Covenant](http://contributor-covenant.org/version/1/3/0/) Code of Conduct.
 
 ## Maintainers
 
 [@EternalDeiwos](https://github.com/EternalDeiwos)
+[@christiansmith](https://github.com/christiansmith)
 
 ## License
 
