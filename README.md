@@ -32,7 +32,7 @@ $ npm install @trust/model --save
 const { DocumentModel, CryptoModel } = require('@trust/model')
 ```
 
-`DocumentModel` and `CryptoModel` have equivalent functionality with the difference of `CryptoModel` extending `JWD` from `@trust/jose`, which introduces various cryptographic functions. For more information please see [`@trust/jose`](https://github.com/anvilresearch/jose)
+`DocumentModel` and `CryptoModel` have equivalent functionality but extend different base classes. `CryptoModel` extends `JWD` from `@trust/jose`, which introduces various cryptographic functions. `DocumentModel` extends `JSONDocument` which `JWD` shares as a common ancestor. For more information please see [`@trust/jose`](https://github.com/anvilresearch/jose) and [`@trust/json-document`](https://github.com/anvilresearch/json-document)
 
 ## Develop
 
