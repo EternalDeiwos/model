@@ -693,7 +693,7 @@ const MixinModel = superclass => class Model extends superclass {
 
     return database.removeAttachment(this._id, name, this._rev)
       .then(result => {
-        this._rev = result.rev || this._rev
+        this._rev = result.rev
 
         if (this._attachments && this._attachments[name]) {
           delete this._attachments[name]
