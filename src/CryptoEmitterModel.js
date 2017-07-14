@@ -6,6 +6,7 @@
  */
 const { JWD } = require('@trust/jose')
 const EmitterMixinModel = require('./EmitterMixinModel')
+const ModelSchema = require('./ModelSchema')
 
 /**
  * CryptoEmitterModel
@@ -17,6 +18,10 @@ class CryptoEmitterModel extends EmitterMixinModel(JWD) {
     data.type = data.type || 'JWS'
     data.serialization = data.serialization || 'document'
     super(data, options)
+  }
+
+  static get schema () {
+    return super.schema.extend(ModelSchema)
   }
 }
 

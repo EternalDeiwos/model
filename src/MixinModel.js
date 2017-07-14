@@ -36,23 +36,6 @@ const MixinModel = superclass => class Model extends superclass {
   }
 
   /**
-   * schema
-   *
-   * @static
-   * @abstract
-   *
-   * @description
-   * Model Schema
-   *
-   * @see {@link https://www.npmjs.com/package/@trust/json-document|JSONSchema}
-   *
-   * @return {JSONSchema}
-   */
-  static get schema () {
-    return ModelSchema
-  }
-
-  /**
    * get indexes
    *
    * @static
