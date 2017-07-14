@@ -24,7 +24,7 @@ let expect = chai.expect
  * Code Under Test
  * @ignore
  */
-const { Model } = require(path.join(cwd, 'src'))
+const { DocumentModel } = require(path.join(cwd, 'src'))
 const ModelSchema = require(path.join(cwd, 'src', 'ModelSchema'))
 const PouchDB = require('pouchdb')
 const { JSONSchema, JSONDocument } = require('@trust/json-document')
@@ -46,28 +46,28 @@ let remoteDbName = 'test/remote'
  * Tests
  * @ignore
  */
-describe('Model', () => {
+describe('DocumentModel', () => {
 
   /**
    * static member schema
    */
   describe('static member schema', () => {
     it('should be an instance of JSONSchema', () => {
-      Model.schema.should.be.instanceOf(JSONSchema)
+      DocumentModel.schema.should.be.instanceOf(JSONSchema)
     })
 
     it('should equal ModelSchema', () => {
-      Model.schema.should.equal(ModelSchema)
+      DocumentModel.schema.should.equal(ModelSchema)
     })
 
     describe('extended class', () => {
       it('should equal ModelSchema if not overriden', () => {
-        class Widgets extends Model {}
+        class Widgets extends DocumentModel {}
         Widgets.schema.should.equal(ModelSchema)
       })
 
       it('should not equal ModelSchema if overriden', () => {
-        class Widgets extends Model {
+        class Widgets extends DocumentModel {
           static get schema () { return new JSONSchema({}) }
         }
         Widgets.schema.should.not.equal(ModelSchema)
@@ -84,7 +84,7 @@ describe('Model', () => {
     const query = { name: 'some_query', query: 'query body' }
 
     beforeEach(() => {
-      class Widgets extends Model {
+      class Widgets extends DocumentModel {
         static get indexes () { return [index] }
         static get queries () { return [query] }
       }
@@ -188,7 +188,7 @@ describe('Model', () => {
     let replicationOptions = { live: true, retry: true, foo: 'bar' }
 
     beforeEach(() => {
-      class Widgets extends Model {}
+      class Widgets extends DocumentModel {}
       Widgets.setDatabase(dbName)
       klass = Widgets
     })
@@ -368,7 +368,7 @@ describe('Model', () => {
     let klass
 
     beforeEach(() => {
-      class Widgets extends Model {}
+      class Widgets extends DocumentModel {}
       Widgets.setDatabase(dbName)
       klass = Widgets
     })
@@ -415,17 +415,17 @@ describe('Model', () => {
    */
   describe('static member indexes', () => {
     it('should be an array', () => {
-      expect(Array.isArray(Model.indexes)).to.be.true
+      expect(Array.isArray(DocumentModel.indexes)).to.be.true
     })
 
     it('should be empty', () => {
-      Model.indexes.length.should.equal(0)
+      DocumentModel.indexes.length.should.equal(0)
     })
 
     describe('extended class', () => {
       it('should deep equal model indexes if not overriden', () => {
-        class Widgets extends Model {}
-        Widgets.indexes.should.deep.equal(Model.indexes)
+        class Widgets extends DocumentModel {}
+        Widgets.indexes.should.deep.equal(DocumentModel.indexes)
       })
     })
   })
@@ -435,17 +435,17 @@ describe('Model', () => {
    */
   describe('static member queries', () => {
     it('should be an array', () => {
-      expect(Array.isArray(Model.queries)).to.be.true
+      expect(Array.isArray(DocumentModel.queries)).to.be.true
     })
 
     it('should be empty', () => {
-      Model.queries.length.should.equal(0)
+      DocumentModel.queries.length.should.equal(0)
     })
 
     describe('extended class', () => {
       it('should deep equal model queries if not overriden', () => {
-        class Widgets extends Model {}
-        Widgets.queries.should.deep.equal(Model.queries)
+        class Widgets extends DocumentModel {}
+        Widgets.queries.should.deep.equal(DocumentModel.queries)
       })
     })
   })
@@ -459,7 +459,7 @@ describe('Model', () => {
     let error_message = 'fubar'
 
     before(() => {
-      class Widgets extends Model {}
+      class Widgets extends DocumentModel {}
       klass = Widgets
     })
 
@@ -494,7 +494,7 @@ describe('Model', () => {
     let error_message = 'fubar'
 
     before(() => {
-      class Widgets extends Model {}
+      class Widgets extends DocumentModel {}
       klass = Widgets
     })
 
@@ -550,7 +550,7 @@ describe('Model', () => {
     let error_message = 'fubar'
 
     before(() => {
-      class Widgets extends Model {}
+      class Widgets extends DocumentModel {}
       klass = Widgets
     })
 
@@ -605,7 +605,7 @@ describe('Model', () => {
     let error_message = 'fubar'
 
     beforeEach(() => {
-      class Widgets extends Model {}
+      class Widgets extends DocumentModel {}
       klass = Widgets
     })
 
@@ -669,7 +669,7 @@ describe('Model', () => {
     let error_message = 'fubar'
 
     beforeEach(() => {
-      class Widgets extends Model {}
+      class Widgets extends DocumentModel {}
       klass = Widgets
       return klass.setDatabase(dbName)
     })
@@ -695,7 +695,7 @@ describe('Model', () => {
     let error_message = 'fubar'
 
     beforeEach(() => {
-      class Widgets extends Model {}
+      class Widgets extends DocumentModel {}
       klass = Widgets
       return klass.setDatabase(dbName)
     })
@@ -758,7 +758,7 @@ describe('Model', () => {
     let index = 'index'
 
     beforeEach(() => {
-      class Widgets extends Model {}
+      class Widgets extends DocumentModel {}
       klass = Widgets
       klass.internalDatabase = { createIndex: sinon.stub().usingPromise(Promise).resolves() }
     })
@@ -779,7 +779,7 @@ describe('Model', () => {
     let indexes_result = { indexes }
 
     beforeEach(() => {
-      class Widgets extends Model {}
+      class Widgets extends DocumentModel {}
       klass = Widgets
       klass.internalDatabase = { getIndexes: sinon.stub().usingPromise(Promise).resolves(indexes_result) }
     })
@@ -812,7 +812,7 @@ describe('Model', () => {
     let result_updated = { _rev: '2-z' }
 
     beforeEach(() => {
-      class Widgets extends Model {}
+      class Widgets extends DocumentModel {}
       klass = Widgets
       klass.internalDatabase = { }
     })
@@ -878,7 +878,7 @@ describe('Model', () => {
     let resolveData = { foo: 'bar' }
 
     beforeEach(() => {
-      class Widgets extends Model {}
+      class Widgets extends DocumentModel {}
       klass = Widgets
       klass.internalDatabase = { close: sinon.stub().usingPromise(Promise).resolves(resolveData) }
       klass.internalSync = [{ cancel: sinon.stub().usingPromise(Promise).resolves() }, { cancel: sinon.stub().usingPromise(Promise).resolves() }]
@@ -919,7 +919,7 @@ describe('Model', () => {
     let error_message = 'fubar'
 
     beforeEach(() => {
-      class Widgets extends Model {}
+      class Widgets extends DocumentModel {}
       klass = Widgets
     })
 
@@ -1000,7 +1000,7 @@ describe('Model', () => {
     let error_message = 'fubar'
 
     before(() => {
-      class Widgets extends Model {}
+      class Widgets extends DocumentModel {}
       klass = Widgets
     })
 
@@ -1061,7 +1061,7 @@ describe('Model', () => {
     let error_message = 'fubar'
 
     before(() => {
-      class Widgets extends Model {}
+      class Widgets extends DocumentModel {}
       klass = Widgets
     })
 
@@ -1121,7 +1121,7 @@ describe('Model', () => {
     let error_message = 'fubar'
 
     before(() => {
-      class Widgets extends Model {}
+      class Widgets extends DocumentModel {}
       klass = Widgets
     })
 
@@ -1186,7 +1186,7 @@ describe('Model', () => {
     let error_message = 'fubar'
 
     before(() => {
-      class Widgets extends Model {}
+      class Widgets extends DocumentModel {}
       klass = Widgets
     })
 
