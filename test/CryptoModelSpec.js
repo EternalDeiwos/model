@@ -49,6 +49,38 @@ let remoteDbName = 'test/remote'
 describe('CryptoModel', () => {
 
   /**
+   * constructor
+   */
+  describe('constructor', () => {
+
+    let klass
+    beforeEach(() => {
+      class Widgets extends CryptoModel {}
+      klass = Widgets
+    })
+
+    it('type should default to "JWS" if not provided', () => {
+      let instance = new klass({})
+      instance.type.should.equal('JWS')
+    })
+
+    it('type should use provided value', () => {
+      let instance = new klass({ type: 'JWE' })
+      instance.type.should.equal('JWE')
+    })
+
+    it('serialization should default to "document" if not provided', () => {
+      let instance = new klass({})
+      instance.serialization.should.equal('document')
+    })
+
+    it('serialization should use provided value', () => {
+      let instance = new klass({ serialization: 'flattened' })
+      instance.serialization.should.equal('flattened')
+    })
+  })
+
+  /**
    * static member schema
    */
   describe('static member schema', () => {
