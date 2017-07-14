@@ -1100,6 +1100,28 @@ describe('DocumentModel', () => {
       klass = Widgets
     })
 
+    it('should create an attachment object if non-exists', () => {
+      klass.internalDatabase = {
+        getAttachment: sinon.stub().usingPromise(Promise).resolves(attachment)
+      }
+
+      let instance = new klass(get_doc)
+      return new klass(get_doc).getAttachment(attachment_name).then(doc => {
+        doc._attachments.should.deep.equal({ [attachment_name]: attachment })
+      })
+    })
+
+    it('should not override an existing attachment object', () => {
+      klass.internalDatabase = {
+        getAttachment: sinon.stub().usingPromise(Promise).resolves(attachment)
+      }
+
+      let _attachments = { foo: 'bar' }
+      return new klass({ _id: 'foo', _attachments }).getAttachment(attachment_name).then(doc => {
+        doc._attachments.foo.should.equal('bar')
+      })
+    })
+
     it('should proxy the call to the database', () => {
       klass.internalDatabase = {
         getAttachment: sinon.stub().usingPromise(Promise).resolves(attachment)
@@ -1122,7 +1144,7 @@ describe('DocumentModel', () => {
       })
     })
 
-    it('should get and retry if the post rejects with a 409', () => {
+    it('should get and retry if the get rejects with a 404', () => {
       let err = new Error(error_message)
       err.status = 404
       klass.internalDatabase = {
@@ -1131,6 +1153,20 @@ describe('DocumentModel', () => {
 
       return new klass(get_doc).getAttachment(attachment_name).then(doc => {
         expect(doc._attachments[attachment_name]).to.be.null
+      })
+    })
+
+    it('should not override an existing attachment object if retry occurs', () => {
+      let err = new Error(error_message)
+      err.status = 404
+      klass.internalDatabase = {
+        getAttachment: sinon.stub().usingPromise(Promise).rejects(err)
+      }
+
+      let input = { _id: 'foo', _attachments: { foo: 'bar' } }
+      return new klass(input).getAttachment(attachment_name).then(doc => {
+        expect(doc._attachments[attachment_name]).to.be.null
+        doc._attachments.foo.should.equal('bar')
       })
     })
 
