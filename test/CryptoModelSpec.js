@@ -28,6 +28,7 @@ const { CryptoModel } = require(path.join(cwd, 'src'))
 const ModelSchema = require(path.join(cwd, 'src', 'ModelSchema'))
 const PouchDB = require('pouchdb')
 const { JSONSchema } = require('@trust/json-document')
+const { JWD } = require('@trust/jose')
 const {
   OperationError,
   InvalidConfigurationError,
@@ -84,25 +85,27 @@ describe('CryptoModel', () => {
    * static member schema
    */
   describe('static member schema', () => {
+    const ExtendedJWDSchema = JWD.schema.extend(ModelSchema)
+
     it('should be an instance of JSONSchema', () => {
       CryptoModel.schema.should.be.instanceOf(JSONSchema)
     })
 
-    it('should equal ModelSchema', () => {
-      CryptoModel.schema.should.equal(ModelSchema)
+    it('should equal ExtendedJWDSchema', () => {
+      CryptoModel.schema.should.deep.equal(ExtendedJWDSchema)
     })
 
     describe('extended class', () => {
-      it('should equal ModelSchema if not overriden', () => {
+      it('should equal ExtendedJWDSchema if not overriden', () => {
         class Widgets extends CryptoModel {}
-        Widgets.schema.should.equal(ModelSchema)
+        Widgets.schema.should.deep.equal(ExtendedJWDSchema)
       })
 
-      it('should not equal ModelSchema if overriden', () => {
+      it('should not equal ExtendedJWDSchema if overriden', () => {
         class Widgets extends CryptoModel {
           static get schema () { return new JSONSchema({}) }
         }
-        Widgets.schema.should.not.equal(ModelSchema)
+        Widgets.schema.should.not.deep.equal(ExtendedJWDSchema)
       })
     })
   })
