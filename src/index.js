@@ -1,19 +1,15 @@
 'use strict'
 
 /**
- * Dependencies
- * @ignore
- */
-const { JSONDocument } = require('@trust/json-document')
-const { JWD } = require('@trust/jose')
-
-/**
  * Module Dependencies
  * @ignore
  */
-const MixinModel = require('./MixinModel')
-const EmitterMixinModel = require('./EmitterMixinModel')
-const SyncMixinModel = require('./SyncMixinModel')
+const DocumentModel = require('./DocumentModel')
+const DocumentEmitterModel = require('./DocumentEmitterModel')
+const DocumentSyncModel = require('./DocumentSyncModel')
+const CryptoModel = require('./CryptoModel')
+const CryptoEmitterModel = require('./CryptoEmitterModel')
+const CryptoSyncModel = require('./CryptoSyncModel')
 const { OperationError, InvalidConfigurationError, ValidationError, InternalError } = require('./errors')
 
 /**
@@ -22,14 +18,14 @@ const { OperationError, InvalidConfigurationError, ValidationError, InternalErro
  */
 module.exports = {
   // Models
-  Model: MixinModel(JSONDocument),
-  CryptoModel: MixinModel(JWD),
+  DocumentModel: DocumentModel,
+  CryptoModel: CryptoModel,
 
-  EmitterModel: EmitterMixinModel(JSONDocument),
-  CryptoEmitterModel: EmitterMixinModel(JWD),
+  DocumentEmitterModel: DocumentEmitterModel,
+  CryptoEmitterModel: CryptoEmitterModel,
 
-  SyncModel: SyncMixinModel(JSONDocument),
-  CryptoSyncModel: SyncMixinModel(JWD),
+  DocumentSyncModel: DocumentSyncModel,
+  CryptoSyncModel: CryptoSyncModel,
 
   // Errors
   OperationError,
