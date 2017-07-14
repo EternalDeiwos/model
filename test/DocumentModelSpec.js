@@ -1317,6 +1317,23 @@ describe('DocumentModel', () => {
       })
     })
 
+    it('should not override an existing attachment object if retry occurs', () => {
+      let err = new Error(error_message)
+      err.status = 409
+      klass.internalDatabase = {
+        removeAttachment: sinon.stub().usingPromise(Promise).onFirstCall().rejects(err)
+          .onSecondCall().resolves(delete_result),
+        get: sinon.stub().usingPromise(Promise).resolves(doc)
+      }
+
+      let input = Object.assign({}, doc, { _attachments: { foo: 'bar' } })
+      return new klass(input).deleteAttachment(attachment_name).then(result => {
+        klass.database.removeAttachment.should.have.been.calledTwice
+        klass.database.get.should.have.been.calledOnce
+        result._attachments.foo.should.equal('bar')
+      })
+    })
+
     it('should reject with InternalError if deleteAttachment rejects with any other status', () => {
       klass.internalDatabase = {
         removeAttachment: sinon.stub().usingPromise(Promise).rejects(new Error(error_message))
