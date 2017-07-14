@@ -1,5 +1,5 @@
 {
-  "name": "pouch-model",
+  "name": "@trust/model",
   "version": "0.1.0",
   "description": "A PouchDB adapter for the json-document modelling framework.",
   "main": "src/index.js",
@@ -13,12 +13,37 @@
     "url": "git+https://github.com/EternalDeiwos/pouch-model.git"
   },
   "keywords": [
+    "CouchDB",
     "PouchDB",
-    "JSONDocument",
+    "Database",
+    "Offline",
+    "Live",
+    "Soft Realtime",
+    "Push",
+    "Replicated",
+    "Distributed",
+    "Embedded",
+    "LevelDB",
+    "LocalStorage",
+    "IndexedDB",
+    "JOSE",
+    "Crypto",
+    "Cryptography",
+    "JWT",
+    "JWD",
+    "Signature",
+    "Signatures",
+    "JSON Mapping",
+    "JSON Document",
+    "JSON Schema",
     "Model",
-    "ORM"
+    "Document"
   ],
-  "author": "Greg Linklater <greg@gryphus.io>",
+  "author": "MIT Connection Science",
+  "contributors": [
+    "Greg Linklater <greg@gryphus.io>",
+    "Christian Smith <smith@anvil.io>"
+  ],
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/EternalDeiwos/pouch-model/issues"
