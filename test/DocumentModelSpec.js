@@ -897,14 +897,18 @@ describe('DocumentModel', () => {
    */
   describe('static close', () => {
     let klass
-    let resolveData = { foo: 'bar' }
+    let dbResolve = { foo: 'bar' }
+    let changesResolve = { foo: 'baz' }
+    let sync1Resolve = { foo: 'qux' }
+    let sync2Resolve = { foo: 'bar' }
+    let resolveData = [dbResolve, [changesResolve], [sync1Resolve, sync2Resolve]]
 
     beforeEach(() => {
       class Widgets extends DocumentModel {}
       klass = Widgets
-      klass.internalDatabase = { close: sinon.stub().usingPromise(Promise).resolves(resolveData) }
-      klass.internalSync = [{ cancel: sinon.stub().usingPromise(Promise).resolves() }, { cancel: sinon.stub().usingPromise(Promise).resolves() }]
-      klass.internalChanges = [{ cancel: sinon.stub().usingPromise(Promise).resolves() }]
+      klass.internalDatabase = { close: sinon.stub().usingPromise(Promise).resolves(dbResolve) }
+      klass.internalSync = [{ cancel: sinon.stub().usingPromise(Promise).resolves(sync1Resolve) }, { cancel: sinon.stub().usingPromise(Promise).resolves(sync2Resolve) }]
+      klass.internalChanges = [{ cancel: sinon.stub().usingPromise(Promise).resolves(changesResolve) }]
     })
 
     it('should cancel change feed', () => {
@@ -926,8 +930,17 @@ describe('DocumentModel', () => {
       })
     })
 
-    it('should return the database.close promise', () => {
-      return klass.close().should.eventually.equal(resolveData)
+    it('should return all promises', () => {
+      return klass.close().then(results => {
+        results.should.deep.equal(resolveData)
+      })
+    })
+
+    it('should reject if cancel or close rejects', () => {
+      let error_message = 'fubar'
+      let error = new Error(error_message)
+      klass.internalDatabase = { close: sinon.stub().usingPromise(Promise).rejects(error) }
+      return klass.close().should.eventually.be.rejectedWith(InternalError, error_message)
     })
   })
 
