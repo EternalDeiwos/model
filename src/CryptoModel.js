@@ -16,7 +16,6 @@ class CryptoModel extends MixinModel(JWD) {
   constructor (data, options) {
     data.type = data.type || 'JWS'
     data.serialization = data.serialization || 'document'
-    console.log(data)
     super(data, options)
   }
 }
