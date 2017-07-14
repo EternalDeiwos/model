@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/EternalDeiwos/pouch-model.git"
+    "url": "git+https://github.com/EternalDeiwos/model.git"
   },
   "keywords": [
     "CouchDB",
@@ -46,9 +46,9 @@
   ],
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/EternalDeiwos/pouch-model/issues"
+    "url": "https://github.com/EternalDeiwos/model/issues"
   },
-  "homepage": "https://github.com/EternalDeiwos/pouch-model#readme",
+  "homepage": "https://github.com/EternalDeiwos/model#readme",
   "dependencies": {
     "@trust/jose": "^0.3.2",
     "@trust/json-document": "^0.1.4",
