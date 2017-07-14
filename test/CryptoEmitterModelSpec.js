@@ -28,6 +28,7 @@ const { CryptoEmitterModel } = require(path.join(cwd, 'src'))
 const ModelSchema = require(path.join(cwd, 'src', 'ModelSchema'))
 const PouchDB = require('pouchdb')
 const { JSONSchema } = require('@trust/json-document')
+const { JWD } = require('@trust/jose')
 const {
   OperationError,
   InvalidConfigurationError,
@@ -77,6 +78,35 @@ describe('CryptoEmitterModel', () => {
     it('serialization should use provided value', () => {
       let instance = new klass({ serialization: 'flattened' })
       instance.serialization.should.equal('flattened')
+    })
+  })
+
+  /**
+   * static member schema
+   */
+  describe('static member schema', () => {
+    const ExtendedJWDSchema = JWD.schema.extend(ModelSchema)
+
+    it('should be an instance of JSONSchema', () => {
+      CryptoEmitterModel.schema.should.be.instanceOf(JSONSchema)
+    })
+
+    it('should equal ExtendedJWDSchema', () => {
+      CryptoEmitterModel.schema.should.deep.equal(ExtendedJWDSchema)
+    })
+
+    describe('extended class', () => {
+      it('should equal ExtendedJWDSchema if not overriden', () => {
+        class Widgets extends CryptoEmitterModel {}
+        Widgets.schema.should.deep.equal(ExtendedJWDSchema)
+      })
+
+      it('should not equal ExtendedJWDSchema if overriden', () => {
+        class Widgets extends CryptoEmitterModel {
+          static get schema () { return new JSONSchema({}) }
+        }
+        Widgets.schema.should.not.deep.equal(ExtendedJWDSchema)
+      })
     })
   })
 })
