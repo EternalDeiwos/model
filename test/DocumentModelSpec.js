@@ -222,7 +222,7 @@ describe('DocumentModel', () => {
         klass.setSync(remoteDbName)
         expect(klass.internalDatabase.sync.firstCall.args[1]).to.deep.equal(defaultReplicationOptions)
         errorStub.firstCall.args[0].should.equal('error')
-        errorStub.firstCall.args[1].toString().should.equal((error => { throw new InternalError(error.message, error.stack) }).toString())
+        errorStub.firstCall.args[1].should.be.a('function')
       })
 
       it('should throw with invalid (boolean) option', () => {
