@@ -27,7 +27,7 @@ let expect = chai.expect
 const { CryptoModel } = require(path.join(cwd, 'src'))
 const ModelSchema = require(path.join(cwd, 'src', 'ModelSchema'))
 const PouchDB = require('pouchdb')
-const { JSONSchema, JSONDocument } = require('@trust/json-document')
+const { JSONSchema } = require('@trust/json-document')
 const {
   OperationError,
   InvalidConfigurationError,
@@ -147,6 +147,10 @@ describe('CryptoModel', () => {
         })
       })
 
+      it('should throw if it cannot create the database', () => {
+        expect(() => klass.setDatabase(123)).to.throw(InvalidConfigurationError, 'Model Widgets database options invalid')
+      })
+
       describe('database setup promise', () => {
         it('should reject if database index creation fails', () => {
           klass.createIndex.restore()
@@ -244,6 +248,12 @@ describe('CryptoModel', () => {
       it('should throw InvalidConfigurationError with invalid (number) name with object option', () => {
         expect(() => klass.setSync({ name: 2 })).to.throw(InvalidConfigurationError, 'Model Widgets remote database options invalid')
       })
+
+      it('should throw InternalError if replication instance emits an error', () => {
+        let error = 'fubar'
+        klass.setSync(remoteDbName)
+        expect(() => klass.sync[0].emit('error', new Error(error))).to.throw(InternalError, error)
+      })
     })
 
     describe('replicateTo', () => {
@@ -297,6 +307,12 @@ describe('CryptoModel', () => {
       it('should throw InvalidConfigurationError with invalid (number) name with object option', () => {
         expect(() => klass.replicateTo({ name: 2 })).to.throw(InvalidConfigurationError, 'Model Widgets remote database options invalid')
       })
+
+      it('should throw InternalError if replication instance emits an error', () => {
+        let error = 'fubar'
+        klass.replicateTo(remoteDbName)
+        expect(() => klass.sync[0].emit('error', new Error(error))).to.throw(InternalError, error)
+      })
     })
 
     describe('replicateFrom', () => {
@@ -349,6 +365,12 @@ describe('CryptoModel', () => {
 
       it('should throw InvalidConfigurationError with invalid (number) name with object option', () => {
         expect(() => klass.replicateFrom({ name: 2 })).to.throw(InvalidConfigurationError, 'Model Widgets remote database options invalid')
+      })
+
+      it('should throw InternalError if replication instance emits an error', () => {
+        let error = 'fubar'
+        klass.replicateFrom(remoteDbName)
+        expect(() => klass.sync[0].emit('error', new Error(error))).to.throw(InternalError, error)
       })
     })
 
