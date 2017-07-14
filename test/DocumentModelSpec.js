@@ -57,20 +57,20 @@ describe('DocumentModel', () => {
     })
 
     it('should equal ModelSchema', () => {
-      DocumentModel.schema.should.equal(ModelSchema)
+      DocumentModel.schema.should.deep.equal(ModelSchema)
     })
 
     describe('extended class', () => {
       it('should equal ModelSchema if not overriden', () => {
         class Widgets extends DocumentModel {}
-        Widgets.schema.should.equal(ModelSchema)
+        Widgets.schema.should.deep.equal(ModelSchema)
       })
 
       it('should not equal ModelSchema if overriden', () => {
         class Widgets extends DocumentModel {
           static get schema () { return new JSONSchema({}) }
         }
-        Widgets.schema.should.not.equal(ModelSchema)
+        Widgets.schema.should.not.deep.equal(ModelSchema)
       })
     })
   })
