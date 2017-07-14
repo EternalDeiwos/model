@@ -4,7 +4,6 @@
  * Dependencies
  * @ignore
  */
-const { JSONDocument } = require('@trust/json-document')
 const PouchDB = require('pouchdb')
   .plugin(require('pouchdb-find'))
 
@@ -21,9 +20,9 @@ const ModelSchema = require('./ModelSchema')
  * @class
  * A PouchDB adapter for the json-document modelling framework. Extends {@link https://www.npmjs.com/package/@trust/json-document|JSONDocument}.
  *
- * @extends JSONDocument
+ * @param {Class} superclass - should be JSONDocument or JWD
  */
-class Model extends JSONDocument {
+const MixinModel = superclass => class Model extends superclass {
 
   /**
    * constructor
@@ -34,23 +33,6 @@ class Model extends JSONDocument {
     // JSON Document hack
     let overrideOptions = Object.assign({}, options, { filter: false })
     super(data, overrideOptions)
-  }
-
-  /**
-   * schema
-   *
-   * @static
-   * @abstract
-   *
-   * @description
-   * Model Schema
-   *
-   * @see {@link https://www.npmjs.com/package/@trust/json-document|JSONSchema}
-   *
-   * @return {JSONSchema}
-   */
-  static get schema () {
-    return ModelSchema
   }
 
   /**
@@ -530,15 +512,14 @@ class Model extends JSONDocument {
   static close () {
     let { database, changes, sync } = this
 
-    if (changes) {
-      changes.forEach(change => change.cancel())
-    }
+    let changesPromises = changes.map(change => change.cancel())
+    let syncPromises = sync.map(replication => replication.cancel())
 
-    if (sync) {
-      sync.forEach(replication => replication.cancel())
-    }
-
-    return database.close()
+    return Promise.all([
+      database.close(),
+      Promise.all(changesPromises),
+      Promise.all(syncPromises),
+    ]).catch(error => Promise.reject(new InternalError(error.message, error.stack)))
   }
 
   /**
@@ -712,7 +693,7 @@ class Model extends JSONDocument {
 
     return database.removeAttachment(this._id, name, this._rev)
       .then(result => {
-        this._rev = result.rev || this._rev
+        this._rev = result.rev
 
         if (this._attachments && this._attachments[name]) {
           delete this._attachments[name]
@@ -740,4 +721,4 @@ class Model extends JSONDocument {
  * Exports
  * @ignore
  */
-module.exports = Model
+module.exports = MixinModel

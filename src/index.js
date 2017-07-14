@@ -4,7 +4,12 @@
  * Module Dependencies
  * @ignore
  */
-const Model = require('./Model')
+const DocumentModel = require('./DocumentModel')
+const DocumentEmitterModel = require('./DocumentEmitterModel')
+const DocumentSyncModel = require('./DocumentSyncModel')
+const CryptoModel = require('./CryptoModel')
+const CryptoEmitterModel = require('./CryptoEmitterModel')
+const CryptoSyncModel = require('./CryptoSyncModel')
 const { OperationError, InvalidConfigurationError, ValidationError, InternalError } = require('./errors')
 
 /**
@@ -13,7 +18,14 @@ const { OperationError, InvalidConfigurationError, ValidationError, InternalErro
  */
 module.exports = {
   // Models
-  Model,
+  DocumentModel,
+  CryptoModel,
+
+  DocumentEmitterModel,
+  CryptoEmitterModel,
+
+  DocumentSyncModel,
+  CryptoSyncModel,
 
   // Errors
   OperationError,

@@ -1,16 +1,10 @@
 'use strict'
 
 /**
- * Dependencies
- * @ignore
- */
-const { JSONSchema } = require('@trust/json-document')
-
-/**
  * ModelSchema
  * @ignore
  */
-const ModelSchema = new JSONSchema({
+const ModelSchema = {
   type: 'object',
   properties: {
     _id: { type: 'string' },
@@ -30,7 +24,7 @@ const ModelSchema = new JSONSchema({
       }
     }
   }
-})
+}
 
 /**
  * Exports

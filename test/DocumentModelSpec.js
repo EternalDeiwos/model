@@ -24,7 +24,7 @@ let expect = chai.expect
  * Code Under Test
  * @ignore
  */
-const Model = require(path.join(cwd, 'src', 'Model'))
+const { DocumentModel } = require(path.join(cwd, 'src'))
 const ModelSchema = require(path.join(cwd, 'src', 'ModelSchema'))
 const PouchDB = require('pouchdb')
 const { JSONSchema, JSONDocument } = require('@trust/json-document')
@@ -46,40 +46,31 @@ let remoteDbName = 'test/remote'
  * Tests
  * @ignore
  */
-describe('Model', () => {
-
-  /**
-   * model extends
-   */
-  describe('static member schema', () => {
-    it('static member schema should extend JSONDocument', () => {
-      Object.getPrototypeOf(Model).should.equal(JSONDocument)
-    })
-  })
+describe('DocumentModel', () => {
 
   /**
    * static member schema
    */
   describe('static member schema', () => {
     it('should be an instance of JSONSchema', () => {
-      Model.schema.should.be.instanceOf(JSONSchema)
+      DocumentModel.schema.should.be.instanceOf(JSONSchema)
     })
 
     it('should equal ModelSchema', () => {
-      Model.schema.should.equal(ModelSchema)
+      DocumentModel.schema.should.deep.equal(ModelSchema)
     })
 
     describe('extended class', () => {
       it('should equal ModelSchema if not overriden', () => {
-        class Widgets extends Model {}
-        Widgets.schema.should.equal(ModelSchema)
+        class Widgets extends DocumentModel {}
+        Widgets.schema.should.deep.equal(ModelSchema)
       })
 
       it('should not equal ModelSchema if overriden', () => {
-        class Widgets extends Model {
+        class Widgets extends DocumentModel {
           static get schema () { return new JSONSchema({}) }
         }
-        Widgets.schema.should.not.equal(ModelSchema)
+        Widgets.schema.should.not.deep.equal(ModelSchema)
       })
     })
   })
@@ -93,7 +84,7 @@ describe('Model', () => {
     const query = { name: 'some_query', query: 'query body' }
 
     beforeEach(() => {
-      class Widgets extends Model {
+      class Widgets extends DocumentModel {
         static get indexes () { return [index] }
         static get queries () { return [query] }
       }
@@ -156,6 +147,10 @@ describe('Model', () => {
         })
       })
 
+      it('should throw if it cannot create the database', () => {
+        expect(() => klass.setDatabase(123)).to.throw(InvalidConfigurationError, 'Model Widgets database options invalid')
+      })
+
       describe('database setup promise', () => {
         it('should reject if database index creation fails', () => {
           klass.createIndex.restore()
@@ -197,7 +192,7 @@ describe('Model', () => {
     let replicationOptions = { live: true, retry: true, foo: 'bar' }
 
     beforeEach(() => {
-      class Widgets extends Model {}
+      class Widgets extends DocumentModel {}
       Widgets.setDatabase(dbName)
       klass = Widgets
     })
@@ -231,7 +226,7 @@ describe('Model', () => {
         klass.setSync(remoteDbName)
         expect(klass.internalDatabase.sync.firstCall.args[1]).to.deep.equal(defaultReplicationOptions)
         errorStub.firstCall.args[0].should.equal('error')
-        errorStub.firstCall.args[1].toString().should.equal((error => { throw new InternalError(error.message, error.stack) }).toString())
+        errorStub.firstCall.args[1].should.be.a('function')
       })
 
       it('should throw with invalid (boolean) option', () => {
@@ -252,6 +247,12 @@ describe('Model', () => {
 
       it('should throw InvalidConfigurationError with invalid (number) name with object option', () => {
         expect(() => klass.setSync({ name: 2 })).to.throw(InvalidConfigurationError, 'Model Widgets remote database options invalid')
+      })
+
+      it('should throw InternalError if replication instance emits an error', () => {
+        let error = 'fubar'
+        klass.setSync(remoteDbName)
+        expect(() => klass.sync[0].emit('error', new Error(error))).to.throw(InternalError, error)
       })
     })
 
@@ -306,6 +307,12 @@ describe('Model', () => {
       it('should throw InvalidConfigurationError with invalid (number) name with object option', () => {
         expect(() => klass.replicateTo({ name: 2 })).to.throw(InvalidConfigurationError, 'Model Widgets remote database options invalid')
       })
+
+      it('should throw InternalError if replication instance emits an error', () => {
+        let error = 'fubar'
+        klass.replicateTo(remoteDbName)
+        expect(() => klass.sync[0].emit('error', new Error(error))).to.throw(InternalError, error)
+      })
     })
 
     describe('replicateFrom', () => {
@@ -359,6 +366,12 @@ describe('Model', () => {
       it('should throw InvalidConfigurationError with invalid (number) name with object option', () => {
         expect(() => klass.replicateFrom({ name: 2 })).to.throw(InvalidConfigurationError, 'Model Widgets remote database options invalid')
       })
+
+      it('should throw InternalError if replication instance emits an error', () => {
+        let error = 'fubar'
+        klass.replicateFrom(remoteDbName)
+        expect(() => klass.sync[0].emit('error', new Error(error))).to.throw(InternalError, error)
+      })
     })
 
     describe('get', () => {
@@ -377,7 +390,7 @@ describe('Model', () => {
     let klass
 
     beforeEach(() => {
-      class Widgets extends Model {}
+      class Widgets extends DocumentModel {}
       Widgets.setDatabase(dbName)
       klass = Widgets
     })
@@ -424,17 +437,17 @@ describe('Model', () => {
    */
   describe('static member indexes', () => {
     it('should be an array', () => {
-      expect(Array.isArray(Model.indexes)).to.be.true
+      expect(Array.isArray(DocumentModel.indexes)).to.be.true
     })
 
     it('should be empty', () => {
-      Model.indexes.length.should.equal(0)
+      DocumentModel.indexes.length.should.equal(0)
     })
 
     describe('extended class', () => {
       it('should deep equal model indexes if not overriden', () => {
-        class Widgets extends Model {}
-        Widgets.indexes.should.deep.equal(Model.indexes)
+        class Widgets extends DocumentModel {}
+        Widgets.indexes.should.deep.equal(DocumentModel.indexes)
       })
     })
   })
@@ -444,17 +457,17 @@ describe('Model', () => {
    */
   describe('static member queries', () => {
     it('should be an array', () => {
-      expect(Array.isArray(Model.queries)).to.be.true
+      expect(Array.isArray(DocumentModel.queries)).to.be.true
     })
 
     it('should be empty', () => {
-      Model.queries.length.should.equal(0)
+      DocumentModel.queries.length.should.equal(0)
     })
 
     describe('extended class', () => {
       it('should deep equal model queries if not overriden', () => {
-        class Widgets extends Model {}
-        Widgets.queries.should.deep.equal(Model.queries)
+        class Widgets extends DocumentModel {}
+        Widgets.queries.should.deep.equal(DocumentModel.queries)
       })
     })
   })
@@ -468,7 +481,7 @@ describe('Model', () => {
     let error_message = 'fubar'
 
     before(() => {
-      class Widgets extends Model {}
+      class Widgets extends DocumentModel {}
       klass = Widgets
     })
 
@@ -503,7 +516,7 @@ describe('Model', () => {
     let error_message = 'fubar'
 
     before(() => {
-      class Widgets extends Model {}
+      class Widgets extends DocumentModel {}
       klass = Widgets
     })
 
@@ -559,7 +572,7 @@ describe('Model', () => {
     let error_message = 'fubar'
 
     before(() => {
-      class Widgets extends Model {}
+      class Widgets extends DocumentModel {}
       klass = Widgets
     })
 
@@ -614,7 +627,7 @@ describe('Model', () => {
     let error_message = 'fubar'
 
     beforeEach(() => {
-      class Widgets extends Model {}
+      class Widgets extends DocumentModel {}
       klass = Widgets
     })
 
@@ -678,7 +691,7 @@ describe('Model', () => {
     let error_message = 'fubar'
 
     beforeEach(() => {
-      class Widgets extends Model {}
+      class Widgets extends DocumentModel {}
       klass = Widgets
       return klass.setDatabase(dbName)
     })
@@ -704,7 +717,7 @@ describe('Model', () => {
     let error_message = 'fubar'
 
     beforeEach(() => {
-      class Widgets extends Model {}
+      class Widgets extends DocumentModel {}
       klass = Widgets
       return klass.setDatabase(dbName)
     })
@@ -767,7 +780,7 @@ describe('Model', () => {
     let index = 'index'
 
     beforeEach(() => {
-      class Widgets extends Model {}
+      class Widgets extends DocumentModel {}
       klass = Widgets
       klass.internalDatabase = { createIndex: sinon.stub().usingPromise(Promise).resolves() }
     })
@@ -788,7 +801,7 @@ describe('Model', () => {
     let indexes_result = { indexes }
 
     beforeEach(() => {
-      class Widgets extends Model {}
+      class Widgets extends DocumentModel {}
       klass = Widgets
       klass.internalDatabase = { getIndexes: sinon.stub().usingPromise(Promise).resolves(indexes_result) }
     })
@@ -821,7 +834,7 @@ describe('Model', () => {
     let result_updated = { _rev: '2-z' }
 
     beforeEach(() => {
-      class Widgets extends Model {}
+      class Widgets extends DocumentModel {}
       klass = Widgets
       klass.internalDatabase = { }
     })
@@ -884,14 +897,18 @@ describe('Model', () => {
    */
   describe('static close', () => {
     let klass
-    let resolveData = { foo: 'bar' }
+    let dbResolve = { foo: 'bar' }
+    let changesResolve = { foo: 'baz' }
+    let sync1Resolve = { foo: 'qux' }
+    let sync2Resolve = { foo: 'bar' }
+    let resolveData = [dbResolve, [changesResolve], [sync1Resolve, sync2Resolve]]
 
     beforeEach(() => {
-      class Widgets extends Model {}
+      class Widgets extends DocumentModel {}
       klass = Widgets
-      klass.internalDatabase = { close: sinon.stub().usingPromise(Promise).resolves(resolveData) }
-      klass.internalSync = [{ cancel: sinon.stub().usingPromise(Promise).resolves() }, { cancel: sinon.stub().usingPromise(Promise).resolves() }]
-      klass.internalChanges = [{ cancel: sinon.stub().usingPromise(Promise).resolves() }]
+      klass.internalDatabase = { close: sinon.stub().usingPromise(Promise).resolves(dbResolve) }
+      klass.internalSync = [{ cancel: sinon.stub().usingPromise(Promise).resolves(sync1Resolve) }, { cancel: sinon.stub().usingPromise(Promise).resolves(sync2Resolve) }]
+      klass.internalChanges = [{ cancel: sinon.stub().usingPromise(Promise).resolves(changesResolve) }]
     })
 
     it('should cancel change feed', () => {
@@ -913,8 +930,17 @@ describe('Model', () => {
       })
     })
 
-    it('should return the database.close promise', () => {
-      return klass.close().should.eventually.equal(resolveData)
+    it('should return all promises', () => {
+      return klass.close().then(results => {
+        results.should.deep.equal(resolveData)
+      })
+    })
+
+    it('should reject if cancel or close rejects', () => {
+      let error_message = 'fubar'
+      let error = new Error(error_message)
+      klass.internalDatabase = { close: sinon.stub().usingPromise(Promise).rejects(error) }
+      return klass.close().should.eventually.be.rejectedWith(InternalError, error_message)
     })
   })
 
@@ -928,7 +954,7 @@ describe('Model', () => {
     let error_message = 'fubar'
 
     beforeEach(() => {
-      class Widgets extends Model {}
+      class Widgets extends DocumentModel {}
       klass = Widgets
     })
 
@@ -1009,7 +1035,7 @@ describe('Model', () => {
     let error_message = 'fubar'
 
     before(() => {
-      class Widgets extends Model {}
+      class Widgets extends DocumentModel {}
       klass = Widgets
     })
 
@@ -1070,8 +1096,30 @@ describe('Model', () => {
     let error_message = 'fubar'
 
     before(() => {
-      class Widgets extends Model {}
+      class Widgets extends DocumentModel {}
       klass = Widgets
+    })
+
+    it('should create an attachment object if non-exists', () => {
+      klass.internalDatabase = {
+        getAttachment: sinon.stub().usingPromise(Promise).resolves(attachment)
+      }
+
+      let instance = new klass(get_doc)
+      return new klass(get_doc).getAttachment(attachment_name).then(doc => {
+        doc._attachments.should.deep.equal({ [attachment_name]: attachment })
+      })
+    })
+
+    it('should not override an existing attachment object', () => {
+      klass.internalDatabase = {
+        getAttachment: sinon.stub().usingPromise(Promise).resolves(attachment)
+      }
+
+      let _attachments = { foo: 'bar' }
+      return new klass({ _id: 'foo', _attachments }).getAttachment(attachment_name).then(doc => {
+        doc._attachments.foo.should.equal('bar')
+      })
     })
 
     it('should proxy the call to the database', () => {
@@ -1096,7 +1144,7 @@ describe('Model', () => {
       })
     })
 
-    it('should get and retry if the post rejects with a 409', () => {
+    it('should get and retry if the get rejects with a 404', () => {
       let err = new Error(error_message)
       err.status = 404
       klass.internalDatabase = {
@@ -1105,6 +1153,20 @@ describe('Model', () => {
 
       return new klass(get_doc).getAttachment(attachment_name).then(doc => {
         expect(doc._attachments[attachment_name]).to.be.null
+      })
+    })
+
+    it('should not override an existing attachment object if retry occurs', () => {
+      let err = new Error(error_message)
+      err.status = 404
+      klass.internalDatabase = {
+        getAttachment: sinon.stub().usingPromise(Promise).rejects(err)
+      }
+
+      let input = { _id: 'foo', _attachments: { foo: 'bar' } }
+      return new klass(input).getAttachment(attachment_name).then(doc => {
+        expect(doc._attachments[attachment_name]).to.be.null
+        doc._attachments.foo.should.equal('bar')
       })
     })
 
@@ -1130,7 +1192,7 @@ describe('Model', () => {
     let error_message = 'fubar'
 
     before(() => {
-      class Widgets extends Model {}
+      class Widgets extends DocumentModel {}
       klass = Widgets
     })
 
@@ -1173,6 +1235,23 @@ describe('Model', () => {
       })
     })
 
+    it('should not override an existing attachment object if retry occurs', () => {
+      let err = new Error(error_message)
+      err.status = 409
+      klass.internalDatabase = {
+        putAttachment: sinon.stub().usingPromise(Promise).onFirstCall().rejects(err)
+          .onSecondCall().resolves(put_result),
+        get: sinon.stub().usingPromise(Promise).resolves(doc)
+      }
+
+      let input = Object.assign({}, doc, { _attachments: { foo: 'bar' } })
+      return new klass(input).putAttachment(attachment_name, attachment).then(result => {
+        klass.database.putAttachment.should.have.been.calledTwice
+        klass.database.get.should.have.been.calledOnce
+        result._attachments.foo.should.equal('bar')
+      })
+    })
+
     it('should reject with InternalError if putAttachment rejects with any other status', () => {
       klass.internalDatabase = {
         putAttachment: sinon.stub().usingPromise(Promise).rejects(new Error(error_message))
@@ -1195,7 +1274,7 @@ describe('Model', () => {
     let error_message = 'fubar'
 
     before(() => {
-      class Widgets extends Model {}
+      class Widgets extends DocumentModel {}
       klass = Widgets
     })
 
@@ -1235,6 +1314,23 @@ describe('Model', () => {
       return new klass(doc).deleteAttachment(attachment_name).then(() => {
         klass.database.removeAttachment.should.have.been.calledTwice
         klass.database.get.should.have.been.calledOnce
+      })
+    })
+
+    it('should not override an existing attachment object if retry occurs', () => {
+      let err = new Error(error_message)
+      err.status = 409
+      klass.internalDatabase = {
+        removeAttachment: sinon.stub().usingPromise(Promise).onFirstCall().rejects(err)
+          .onSecondCall().resolves(delete_result),
+        get: sinon.stub().usingPromise(Promise).resolves(doc)
+      }
+
+      let input = Object.assign({}, doc, { _attachments: { foo: 'bar' } })
+      return new klass(input).deleteAttachment(attachment_name).then(result => {
+        klass.database.removeAttachment.should.have.been.calledTwice
+        klass.database.get.should.have.been.calledOnce
+        result._attachments.foo.should.equal('bar')
       })
     })
 
