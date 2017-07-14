@@ -529,15 +529,14 @@ const MixinModel = superclass => class Model extends superclass {
   static close () {
     let { database, changes, sync } = this
 
-    if (changes) {
-      changes.forEach(change => change.cancel())
-    }
+    let changesPromises = changes.map(change => change.cancel())
+    let syncPromises = sync.map(replication => replication.cancel())
 
-    if (sync) {
-      sync.forEach(replication => replication.cancel())
-    }
-
-    return database.close()
+    return Promise.all([
+      database.close(),
+      Promise.all(changesPromises),
+      Promise.all(syncPromises),
+    ]).catch(error => Promise.reject(new InternalError(error.message, error.stack)))
   }
 
   /**
