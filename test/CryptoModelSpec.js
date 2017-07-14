@@ -514,8 +514,12 @@ describe('CryptoModel', () => {
       }
 
       return klass.find().then(results => {
-        results[0].should.deep.equal(docs[0])
-        results[1].should.deep.equal(docs[1])
+        results[0].serialization.should.equal('document')
+        results[0].type.should.equal('JWS')
+        results[0]._id.should.equal('foo')
+        results[1].serialization.should.equal('document')
+        results[1].type.should.equal('JWS')
+        results[1]._id.should.equal('bar')
         klass.database.find.should.have.been.calledOnce
       })
     })
@@ -560,7 +564,9 @@ describe('CryptoModel', () => {
       }
 
       return klass.get().then(doc => {
-        doc.should.deep.equal(get_doc)
+        doc.serialization.should.equal('document')
+        doc.type.should.equal('JWS')
+        doc._id.should.equal('foo')
         klass.database.get.should.have.been.calledOnce
       })
     })
