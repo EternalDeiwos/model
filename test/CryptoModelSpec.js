@@ -1278,6 +1278,23 @@ describe('CryptoModel', () => {
       })
     })
 
+    it('should not override an existing attachment object if retry occurs', () => {
+      let err = new Error(error_message)
+      err.status = 409
+      klass.internalDatabase = {
+        putAttachment: sinon.stub().usingPromise(Promise).onFirstCall().rejects(err)
+          .onSecondCall().resolves(put_result),
+        get: sinon.stub().usingPromise(Promise).resolves(doc)
+      }
+
+      let input = Object.assign({}, doc, { _attachments: { foo: 'bar' } })
+      return new klass(input).putAttachment(attachment_name, attachment).then(result => {
+        klass.database.putAttachment.should.have.been.calledTwice
+        klass.database.get.should.have.been.calledOnce
+        result._attachments.foo.should.equal('bar')
+      })
+    })
+
     it('should reject with InternalError if putAttachment rejects with any other status', () => {
       klass.internalDatabase = {
         putAttachment: sinon.stub().usingPromise(Promise).rejects(new Error(error_message))
