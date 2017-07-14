@@ -18,14 +18,14 @@ const { OperationError, InvalidConfigurationError, ValidationError, InternalErro
  */
 module.exports = {
   // Models
-  DocumentModel: DocumentModel,
-  CryptoModel: CryptoModel,
+  DocumentModel,
+  CryptoModel,
 
-  DocumentEmitterModel: DocumentEmitterModel,
-  CryptoEmitterModel: CryptoEmitterModel,
+  DocumentEmitterModel,
+  CryptoEmitterModel,
 
-  DocumentSyncModel: DocumentSyncModel,
-  CryptoSyncModel: CryptoSyncModel,
+  DocumentSyncModel,
+  CryptoSyncModel,
 
   // Errors
   OperationError,
