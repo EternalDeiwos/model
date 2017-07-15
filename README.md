@@ -112,9 +112,8 @@ This project is part of a greater group of projects visible [here](https://www.n
 
 ## Maintainers
 
-[@EternalDeiwos](https://github.com/EternalDeiwos)
-
-[@christiansmith](https://github.com/christiansmith)
+* [@EternalDeiwos](https://github.com/EternalDeiwos)
+* [@christiansmith](https://github.com/christiansmith)
 
 ## License
 
