@@ -12,6 +12,9 @@ const CryptoEmitterModel = require('./CryptoEmitterModel')
 const CryptoSyncModel = require('./CryptoSyncModel')
 const { OperationError, InvalidConfigurationError, ValidationError, InternalError } = require('./errors')
 
+const EventSource = require('./event-source/EventSource')
+const Action = require('./event-source/Action')
+
 /**
  * Exports
  * @ignore
@@ -32,4 +35,8 @@ module.exports = {
   InvalidConfigurationError,
   ValidationError,
   InternalError,
+
+  // Event Source
+  EventSource,
+  Action,
 }
