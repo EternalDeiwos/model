@@ -4,6 +4,7 @@
  * Module Dependencies
  * @ignore
  */
+const AbstractError = require('./AbstractError')
 const OperationError = require('./OperationError')
 const InvalidConfigurationError = require('./InvalidConfigurationError')
 const ValidationError = require('./ValidationError')
@@ -14,6 +15,7 @@ const InternalError = require('./InternalError')
  * @ignore
  */
 module.exports = {
+  AbstractError,
   OperationError,
   InvalidConfigurationError,
   ValidationError,
