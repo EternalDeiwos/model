@@ -52,8 +52,10 @@
   "dependencies": {
     "@trust/jose": "^0.3.2",
     "@trust/json-document": "^0.1.4",
+    "node-fetch": "^1.7.1",
     "pouchdb": "^6.2.0",
-    "pouchdb-find": "^6.2.0"
+    "pouchdb-find": "^6.2.0",
+    "redux": "^3.7.2"
   },
   "devDependencies": {
     "chai": "^4.0.2",
