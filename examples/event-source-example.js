@@ -69,4 +69,7 @@ let source = new Test({
 
 source.store.subscribe(() => console.log('STATE', source.state))
 source.database.sync('http://localhost:5984/test', { live: true, retry: true })
-source.factory('test').put({ foo: 'bar', type: 'test' })
+
+let testActionInstance = source.factory('test')
+let storePromise = testActionInstance.put({ foo: 'bar', type: 'test' })
+storePromise.then(() => console.log('DONE'))
