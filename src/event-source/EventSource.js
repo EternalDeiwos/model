@@ -82,6 +82,11 @@ class EventSource {
   factory (name) {
     let { constructor: { actions } } = this
     let Action = actions[name]
+
+    if (!Action) {
+      throw new OperationError('Action ${name} does not exist')
+    }
+
     return new Action(this)
   }
 }
