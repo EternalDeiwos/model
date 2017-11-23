@@ -4,9 +4,9 @@
   "description": "A PouchDB adapter for the json-document modelling framework.",
   "main": "src/index.js",
   "scripts": {
-    "test": "./node_modules/.bin/mocha -w",
-    "jsdoc": "./node_modules/.bin/jsdoc -c jsdoc.json -r",
-    "coverage": "./node_modules/.bin/istanbul cover ./node_modules/.bin/_mocha -- test/"
+    "test": "nyc _mocha test",
+    "jsdoc": "jsdoc -c jsdoc.json -r",
+    "coverage": "nyc --reporter=lcov _mocha test"
   },
   "repository": {
     "type": "git",
@@ -50,8 +50,8 @@
   },
   "homepage": "https://github.com/EternalDeiwos/model#readme",
   "dependencies": {
-    "@trust/jose": "^0.3.2",
     "@trust/json-document": "^0.1.4",
+    "@trust/jwt": "^0.5.1",
     "pouchdb": "^6.2.0",
     "pouchdb-find": "^6.2.0"
   },
@@ -59,9 +59,9 @@
     "chai": "^4.0.2",
     "chai-as-promised": "^7.1.1",
     "codecov": "^2.2.0",
-    "istanbul": "^0.4.5",
     "jsdoc": "^3.5.0",
     "mocha": "^3.4.2",
+    "nyc": "^11.3.0",
     "sinon": "^2.3.7",
     "sinon-chai": "^2.11.0"
   }
