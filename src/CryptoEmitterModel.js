@@ -4,7 +4,7 @@
  * Module Dependencies
  * @ignore
  */
-const { JWD } = require('@trust/jose')
+const { JWD } = require('@trust/jwt')
 const EmitterMixinModel = require('./EmitterMixinModel')
 const ModelSchema = require('./ModelSchema')
 

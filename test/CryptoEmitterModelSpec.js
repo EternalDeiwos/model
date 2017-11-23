@@ -28,7 +28,7 @@ const { CryptoEmitterModel } = require(path.join(cwd, 'src'))
 const ModelSchema = require(path.join(cwd, 'src', 'ModelSchema'))
 const PouchDB = require('pouchdb')
 const { JSONSchema } = require('@trust/json-document')
-const { JWD } = require('@trust/jose')
+const { JWD } = require('@trust/jwt')
 const {
   OperationError,
   InvalidConfigurationError,
